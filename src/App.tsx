@@ -113,7 +113,7 @@ function FullPageEditor({ params }: { params: { id: string } }) {
                 <div className="space-y-4">
                   <div>
                     <div className="text-xs font-medium text-gray-400 mb-2 uppercase tracking-wider">Font Family</div>
-                    <div className="flex flex-col space-y-1">
+                    <div className="flex bg-gray-100 dark:bg-white/5 p-1 rounded-lg">
                       {[
                         { id: 'font-sans', label: 'Default' },
                         { id: 'font-droid-serif', label: 'Serif' },
@@ -122,12 +122,9 @@ function FullPageEditor({ params }: { params: { id: string } }) {
                         <button
                           key={font.id}
                           onClick={() => updateFont(font.id)}
-                          className={`flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-colors ${fontFamily === font.id ? 'bg-black/5 dark:bg-white/10 font-medium' : 'hover:bg-black/5 dark:hover:bg-white/5 text-gray-500'}`}
+                          className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-all ${fontFamily === font.id ? 'bg-white dark:bg-card-dark shadow-sm text-primary' : 'text-gray-500 hover:text-gray-800 dark:hover:text-gray-300'}`}
                         >
-                          <span className={font.id === 'font-droid-serif' ? 'font-serif' : font.id === 'font-dm-mono' ? 'font-mono' : 'font-sans'}>
-                            {font.label}
-                          </span>
-                          {fontFamily === font.id && <div className="w-2 h-2 rounded-full bg-primary" />}
+                          {font.label}
                         </button>
                       ))}
                     </div>
@@ -162,14 +159,20 @@ function FullPageEditor({ params }: { params: { id: string } }) {
 
       <div className="flex-1 overflow-y-auto" onClick={() => setShowSettings(false)}>
         <div className="max-w-3xl mx-auto py-12 px-8">
-          <input
+          <textarea
             value={note.title}
+            rows={1}
+            onInput={(e) => {
+              const target = e.target as HTMLTextAreaElement;
+              target.style.height = 'auto';
+              target.style.height = target.scrollHeight + 'px';
+            }}
             onChange={e => {
               setNote({ ...note, title: e.target.value });
               saveNote(e.target.value, note.content);
             }}
             placeholder="Note Title"
-            className={`text-4xl font-bold bg-transparent outline-none w-full mb-8 placeholder:opacity-30 ${fontFamily}`}
+            className={`text-4xl font-bold bg-transparent outline-none w-full mb-8 placeholder:opacity-30 text-left resize-none overflow-hidden ${fontFamily}`}
           />
           <Editor
             markdown={note.content}
