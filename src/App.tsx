@@ -57,15 +57,27 @@ function FullPageEditor({ params }: { params: { id: string } }) {
   const [, setLocation] = useLocation();
   const saveTimeoutRef = useRef<number | undefined>(undefined);
 
+  // Layout State
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [isDark, setIsDark] = useState(false);
+
   // Settings State
   const [showSettings, setShowSettings] = useState(false);
   const [fontFamily, setFontFamily] = useState<'font-sans' | 'font-droid-serif' | 'font-dm-mono'>('font-sans');
-
   const [fontSize, setFontSize] = useState<'prose-base' | 'prose-lg' | 'prose-xl'>('prose-base');
   const [frameStyle, setFrameStyle] = useState<'none' | 'vertical' | 'boxed'>('none');
 
   useEffect(() => {
-    // Load settings from local storage if available
+    // Load sidebar state
+    const savedSidebar = localStorage.getItem('nulish_sidebar_open');
+    if (savedSidebar !== null) setIsSidebarOpen(savedSidebar === 'true');
+
+    // Initialize dark mode from DOM
+    if (document.documentElement.classList.contains('dark')) {
+      setIsDark(true);
+    }
+
+    // Load settings from local storage
     const savedFont = localStorage.getItem('nulish_font');
     if (savedFont) setFontFamily(savedFont as any);
     const savedSize = localStorage.getItem('nulish_size');
@@ -79,6 +91,17 @@ function FullPageEditor({ params }: { params: { id: string } }) {
       });
     }
   }, [params.id]);
+
+  const toggleSidebar = () => {
+    const newState = !isSidebarOpen;
+    setIsSidebarOpen(newState);
+    localStorage.setItem('nulish_sidebar_open', String(newState));
+  };
+
+  const toggleDark = () => {
+    setIsDark(!isDark);
+    document.documentElement.classList.toggle('dark');
+  };
 
   const updateFont = (font: string) => {
     setFontFamily(font as any);
@@ -104,144 +127,160 @@ function FullPageEditor({ params }: { params: { id: string } }) {
   if (!note) return <div className="p-8">Loading...</div>;
 
   return (
-    <div className="flex flex-col h-screen bg-white dark:bg-background-dark animate-in fade-in duration-500">
-      {/* Minimal Header */}
-      <div className="h-16 flex items-center justify-between px-8 border-b border-gray-100 dark:border-white/5 relative z-50">
-        <button onClick={() => setLocation('/')} className="p-2 hover:bg-gray-100 dark:hover:bg-white/10 rounded-full transition-colors">
-          <ArrowLeft size={20} className="opacity-50" />
-        </button>
-        <div className="text-sm opacity-40 font-medium">Edited {format(note.updated_at, 'MMM d, HH:mm')}</div>
+    <div className={`flex min-h-screen font-sans text-gray-900 dark:text-gray-100 bg-background-light dark:bg-background-dark animate-in fade-in duration-500`}>
 
-        <div className="relative">
-          <button
-            onClick={() => setShowSettings(!showSettings)}
-            className={`p-2 rounded-full transition-colors ${showSettings ? 'bg-gray-100 dark:bg-white/10 text-primary' : 'hover:bg-gray-100 dark:hover:bg-white/10'}`}
-          >
-            <MoreHorizontal size={20} className={showSettings ? "opacity-100" : "opacity-50"} />
-          </button>
+      <Sidebar isOpen={isSidebarOpen} />
 
-          <AnimatePresence>
-            {showSettings && (
-              <motion.div
-                initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                className="absolute right-0 top-12 w-64 bg-white dark:bg-card-dark rounded-xl shadow-xl border border-gray-200 dark:border-white/10 p-4 z-50"
+      <main className={`flex-1 relative bg-background-light dark:bg-background-dark min-h-screen transition-all duration-300 ${isSidebarOpen ? 'mr-64' : 'mr-0'}`}>
+        <header className={`fixed top-0 left-0 right-0 h-16 flex items-center justify-between px-8 z-10 glass-panel border-b-0 transition-all duration-300 ${isSidebarOpen ? 'mr-64' : 'mr-0'}`}>
+          <div className="flex items-center space-x-4">
+            <button onClick={() => setLocation('/')} className="p-2 hover:bg-gray-100 dark:hover:bg-white/10 rounded-full transition-colors">
+              <ArrowLeft size={20} className="opacity-50" />
+            </button>
+            <div className="text-sm opacity-40 font-medium">Edited {format(note.updated_at, 'MMM d, HH:mm')}</div>
+          </div>
+
+          <div className="flex items-center space-x-2">
+            <button onClick={toggleDark} className="p-2 hover:bg-black/5 dark:hover:bg-white/10 rounded-full">
+              {isDark ? <Sun size={20} /> : <Moon size={20} />}
+            </button>
+            <button onClick={toggleSidebar} className="p-2 hover:bg-black/5 dark:hover:bg-white/10 rounded-full">
+              <PanelRight size={20} className={isSidebarOpen ? 'text-primary' : 'text-gray-500'} />
+            </button>
+
+            {/* Settings Menu */}
+            <div className="relative">
+              <button
+                onClick={() => setShowSettings(!showSettings)}
+                className={`p-2 rounded-full transition-colors ${showSettings ? 'bg-gray-100 dark:bg-white/10 text-primary' : 'hover:bg-gray-100 dark:hover:bg-white/10'}`}
               >
-                <div className="space-y-4">
-                  <div>
-                    <div className="text-xs font-medium text-gray-400 mb-2 uppercase tracking-wider">Font Family</div>
-                    <div className="flex bg-gray-100 dark:bg-white/5 p-1 rounded-lg">
-                      {[
-                        { id: 'font-sans', label: 'Default' },
-                        { id: 'font-droid-serif', label: 'Serif' },
-                        { id: 'font-dm-mono', label: 'Mono' }
-                      ].map(font => (
-                        <button
-                          key={font.id}
-                          onClick={() => updateFont(font.id)}
-                          className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-all ${fontFamily === font.id ? 'bg-white dark:bg-card-dark shadow-sm text-primary' : 'text-gray-500 hover:text-gray-800 dark:hover:text-gray-300'}`}
-                        >
-                          {font.label}
-                        </button>
-                      ))}
+                <MoreHorizontal size={20} className={showSettings ? "opacity-100" : "opacity-50"} />
+              </button>
+
+              <AnimatePresence>
+                {showSettings && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    className="absolute right-0 top-12 w-64 bg-white dark:bg-card-dark rounded-xl shadow-xl border border-gray-200 dark:border-white/10 p-4 z-50"
+                  >
+                    <div className="space-y-4">
+                      <div>
+                        <div className="text-xs font-medium text-gray-400 mb-2 uppercase tracking-wider">Font Family</div>
+                        <div className="flex bg-gray-100 dark:bg-white/5 p-1 rounded-lg">
+                          {[
+                            { id: 'font-sans', label: 'Default' },
+                            { id: 'font-droid-serif', label: 'Serif' },
+                            { id: 'font-dm-mono', label: 'Mono' }
+                          ].map(font => (
+                            <button
+                              key={font.id}
+                              onClick={() => updateFont(font.id)}
+                              className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-all ${fontFamily === font.id ? 'bg-white dark:bg-card-dark shadow-sm text-primary' : 'text-gray-500 hover:text-gray-800 dark:hover:text-gray-300'}`}
+                            >
+                              {font.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="h-px bg-gray-100 dark:bg-white/5" />
+
+                      <div>
+                        <div className="text-xs font-medium text-gray-400 mb-2 uppercase tracking-wider">Font Size</div>
+                        <div className="flex bg-gray-100 dark:bg-white/5 p-1 rounded-lg">
+                          {[
+                            { id: 'prose-base', label: 'Small' },
+                            { id: 'prose-lg', label: 'Medium' },
+                            { id: 'prose-xl', label: 'Large' }
+                          ].map(size => (
+                            <button
+                              key={size.id}
+                              onClick={() => updateSize(size.id)}
+                              className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-all ${fontSize === size.id ? 'bg-white dark:bg-card-dark shadow-sm text-primary' : 'text-gray-500 hover:text-gray-800 dark:hover:text-gray-300'}`}
+                            >
+                              {size.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="h-px bg-gray-100 dark:bg-white/5" />
+
+                      <div>
+                        <div className="text-xs font-medium text-gray-400 mb-2 uppercase tracking-wider">Frame</div>
+                        <div className="flex bg-gray-100 dark:bg-white/5 p-1 rounded-lg">
+                          {[
+                            { id: 'none', label: 'None' },
+                            { id: 'vertical', label: 'Sided' },
+                            { id: 'boxed', label: 'Boxed' }
+                          ].map(style => (
+                            <button
+                              key={style.id}
+                              onClick={() => updateFrame(style.id)}
+                              className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-all ${frameStyle === style.id ? 'bg-white dark:bg-card-dark shadow-sm text-primary' : 'text-gray-500 hover:text-gray-800 dark:hover:text-gray-300'}`}
+                            >
+                              {style.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
                     </div>
-                  </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </div>
+        </header>
 
-                  <div className="h-px bg-gray-100 dark:bg-white/5" />
+        <div className="flex-1 overflow-y-auto pt-16" onClick={() => setShowSettings(false)}>
+          <div className={`max-w-3xl mx-auto py-12 px-8 transition-all duration-300 
+            ${frameStyle === 'vertical' ? 'border-x border-gray-200 dark:border-white/5 min-h-screen bg-white dark:bg-card-dark' : ''} 
+            ${frameStyle === 'boxed' ? 'border border-gray-200 dark:border-white/5 rounded-xl my-8 min-h-[calc(100vh-8rem)] bg-white dark:bg-card-dark shadow-sm' : ''}
+          `}>
+            <TitleTextarea
+              value={note.title}
+              onChange={(val) => {
+                setNote({ ...note, title: val });
+                if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+                saveTimeoutRef.current = window.setTimeout(() => {
+                  saveNote(val, note.content, note.tags);
+                }, 1000);
+              }}
+              className={fontFamily}
+            />
 
-                  <div>
-                    <div className="text-xs font-medium text-gray-400 mb-2 uppercase tracking-wider">Font Size</div>
-                    <div className="flex bg-gray-100 dark:bg-white/5 p-1 rounded-lg">
-                      {[
-                        { id: 'prose-base', label: 'Small' },
-                        { id: 'prose-lg', label: 'Medium' },
-                        { id: 'prose-xl', label: 'Large' }
-                      ].map(size => (
-                        <button
-                          key={size.id}
-                          onClick={() => updateSize(size.id)}
-                          className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-all ${fontSize === size.id ? 'bg-white dark:bg-card-dark shadow-sm text-primary' : 'text-gray-500 hover:text-gray-800 dark:hover:text-gray-300'}`}
-                        >
-                          {size.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+            <div className="border-t border-gray-100 dark:border-white/5" />
 
-                  <div className="h-px bg-gray-100 dark:bg-white/5" />
+            <div className="py-4">
+              <TagInput
+                tags={note.tags || []}
+                showIcon={false}
+                onChange={(newTags) => {
+                  setNote({ ...note, tags: newTags });
+                  saveNote(note.title, note.content, newTags);
+                }}
+              />
+            </div>
 
-                  <div>
-                    <div className="text-xs font-medium text-gray-400 mb-2 uppercase tracking-wider">Frame</div>
-                    <div className="flex bg-gray-100 dark:bg-white/5 p-1 rounded-lg">
-                      {[
-                        { id: 'none', label: 'None' },
-                        { id: 'vertical', label: 'Sided' },
-                        { id: 'boxed', label: 'Boxed' }
-                      ].map(style => (
-                        <button
-                          key={style.id}
-                          onClick={() => updateFrame(style.id)}
-                          className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-all ${frameStyle === style.id ? 'bg-white dark:bg-card-dark shadow-sm text-primary' : 'text-gray-500 hover:text-gray-800 dark:hover:text-gray-300'}`}
-                        >
-                          {style.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-      </div>
+            <div className="border-t border-gray-100 dark:border-white/5" />
 
-      <div className="flex-1 overflow-y-auto" onClick={() => setShowSettings(false)}>
-        <div className={`max-w-3xl mx-auto py-12 px-8 transition-all duration-300 
-          ${frameStyle === 'vertical' ? 'border-x border-gray-200 dark:border-white/5 min-h-screen bg-white dark:bg-card-dark' : ''} 
-          ${frameStyle === 'boxed' ? 'border border-gray-200 dark:border-white/5 rounded-xl my-8 min-h-[calc(100vh-8rem)] bg-white dark:bg-card-dark shadow-sm' : ''}
-        `}>
-          <TitleTextarea
-            value={note.title}
-            onChange={(val) => {
-              setNote({ ...note, title: val });
-              if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-              saveTimeoutRef.current = window.setTimeout(() => {
-                saveNote(val, note.content, note.tags);
-              }, 1000);
-            }}
-            className={fontFamily}
-          />
+            <Editor
+              markdown={note.content}
+              className={`${fontFamily} ${fontSize}`}
+              onChange={md => {
+                setNote({ ...note, content: md });
 
-          <div className="border-t border-gray-100 dark:border-white/5" />
-
-          <div className="py-4">
-            <TagInput
-              tags={note.tags || []}
-              showIcon={false}
-              onChange={(newTags) => {
-                setNote({ ...note, tags: newTags });
-                saveNote(note.title, note.content, newTags);
+                if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+                saveTimeoutRef.current = window.setTimeout(() => {
+                  saveNote(note.title, md, note.tags);
+                }, 1000);
               }}
             />
           </div>
-
-          <div className="border-t border-gray-100 dark:border-white/5" />
-
-          <Editor
-            markdown={note.content}
-            className={`${fontFamily} ${fontSize}`}
-            onChange={md => {
-              setNote({ ...note, content: md });
-
-              if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
-              saveTimeoutRef.current = window.setTimeout(() => {
-                saveNote(note.title, md, note.tags);
-              }, 1000);
-            }}
-          />
         </div>
-      </div>
+      </main>
     </div>
   );
 }
