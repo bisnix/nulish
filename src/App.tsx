@@ -365,7 +365,7 @@ function AppLayout() {
                       }
                     }}
                     data-placeholder="Note Title"
-                    className="bg-transparent font-bold text-3xl outline-none w-full pb-4 px-8 text-gray-900 dark:text-gray-100 break-words empty:before:content-[attr(data-placeholder)] empty:before:text-gray-400 empty:before:opacity-30"
+                    className="bg-transparent font-bold text-3xl outline-none w-full pb-4 px-8 text-center text-gray-900 dark:text-gray-100 break-words empty:before:content-[attr(data-placeholder)] empty:before:text-gray-400 empty:before:opacity-30"
                   >
                     {activeNote.title}
                   </div>

@@ -13,6 +13,7 @@ export const TagInput = ({ tags, onChange, showIcon = true }: TagInputProps) => 
     const [suggestions, setSuggestions] = useState<Tag[]>([]);
     const [allTags, setAllTags] = useState<Tag[]>([]);
     const [showSuggestions, setShowSuggestions] = useState(false);
+    const [selectedIndex, setSelectedIndex] = useState(-1);
     const inputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
@@ -24,16 +25,22 @@ export const TagInput = ({ tags, onChange, showIcon = true }: TagInputProps) => 
     }, []);
 
     const handleKeyDown = (e: React.KeyboardEvent) => {
-        if (e.key === 'Enter' || e.key === 'Tab') {
+        if (e.key === 'ArrowDown') {
             e.preventDefault();
-            if (inputValue.trim()) {
+            setSelectedIndex(prev => (prev + 1) % suggestions.length);
+        } else if (e.key === 'ArrowUp') {
+            e.preventDefault();
+            setSelectedIndex(prev => (prev - 1 + suggestions.length) % suggestions.length);
+        } else if (e.key === 'Enter' || e.key === 'Tab') {
+            e.preventDefault();
+            if (selectedIndex >= 0 && suggestions[selectedIndex]) {
+                addTag(suggestions[selectedIndex].name);
+            } else if (inputValue.trim()) {
                 addTag(inputValue.trim());
             }
-        }
-        if (e.key === 'Backspace' && !inputValue && tags.length > 0) {
+        } else if (e.key === 'Backspace' && !inputValue && tags.length > 0) {
             removeTag(tags.length - 1);
         }
-        // Down/Up arrows for suggestion navigation could go here
     };
 
     const addTag = (text: string) => {
@@ -43,6 +50,7 @@ export const TagInput = ({ tags, onChange, showIcon = true }: TagInputProps) => 
         }
         setInputValue('');
         setShowSuggestions(false);
+        setSelectedIndex(-1);
     };
 
     const removeTag = (index: number) => {
@@ -57,17 +65,14 @@ export const TagInput = ({ tags, onChange, showIcon = true }: TagInputProps) => 
             setSuggestions([]);
             return;
         }
-        // Flat search for now. 
-        // Note: db tags are stored as segments. We need to reconstruct full paths if we want to suggest full paths?
-        // Or just suggest segments? 
-        // For simplicity in this UI, let's suggest segments.
         const matches = allTags.filter(t => t.name.toLowerCase().includes(inputValue.toLowerCase()));
         setSuggestions(matches);
         setShowSuggestions(matches.length > 0);
+        setSelectedIndex(0); // Select first match by default
     }, [inputValue, allTags]);
 
     return (
-        <div className="flex flex-wrap items-center gap-2 relative group">
+        <div className="flex flex-wrap items-center justify-center gap-2 relative group">
             {showIcon && <TagIcon size={16} className="text-gray-400" />}
 
             {tags.map((tag, index) => (
@@ -82,33 +87,37 @@ export const TagInput = ({ tags, onChange, showIcon = true }: TagInputProps) => 
                 </div>
             ))}
 
-            <input
-                ref={inputRef}
-                type="text"
-                value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                onKeyDown={handleKeyDown}
-                onFocus={() => setShowSuggestions(!!inputValue)}
-                onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
-                placeholder={tags.length === 0 ? "Add tags..." : ""}
-                className="bg-transparent border-none outline-none text-sm text-gray-600 dark:text-gray-300 placeholder:text-gray-400 min-w-[80px] flex-1"
-            />
+            <div className="relative">
+                <input
+                    ref={inputRef}
+                    type="text"
+                    value={inputValue}
+                    onChange={(e) => setInputValue(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    onFocus={() => setShowSuggestions(!!inputValue)}
+                    onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
+                    placeholder={tags.length === 0 ? "Add tags..." : ""}
+                    style={{ width: tags.length === 0 ? 'auto' : Math.max(10, inputValue.length * 10) + 'px', minWidth: tags.length === 0 ? '80px' : '4px' }}
+                    className="bg-transparent border-none outline-none text-sm text-gray-600 dark:text-gray-300 placeholder:text-gray-400 text-left"
+                />
 
-            {/* Suggestions Dropdown */}
-            {showSuggestions && suggestions.length > 0 && (
-                <div className="absolute top-full left-0 mt-1 w-64 bg-white dark:bg-gray-800 border border-gray-100 dark:border-white/10 rounded-lg shadow-lg z-50 max-h-48 overflow-y-auto">
-                    {suggestions.map(tag => (
-                        <div
-                            key={tag.id}
-                            className="px-3 py-2 text-sm hover:bg-gray-50 dark:hover:bg-white/5 cursor-pointer text-gray-700 dark:text-gray-300 flex items-center"
-                            onClick={() => addTag(tag.name)}
-                        >
-                            <span className="opacity-50 mr-2">#</span>
-                            {tag.name}
-                        </div>
-                    ))}
-                </div>
-            )}
+                {/* Suggestions Dropdown */}
+                {showSuggestions && suggestions.length > 0 && (
+                    <div className="absolute top-full left-0 mt-1 w-48 bg-white dark:bg-gray-800 border border-gray-100 dark:border-white/10 rounded-lg shadow-lg z-50 max-h-48 overflow-y-auto">
+                        {suggestions.map((tag, index) => (
+                            <div
+                                key={tag.id}
+                                className={`px-3 py-2 text-sm cursor-pointer flex items-center ${index === selectedIndex ? 'bg-primary/10 text-primary' : 'hover:bg-gray-50 dark:hover:bg-white/5 text-gray-700 dark:text-gray-300'}`}
+                                onClick={() => addTag(tag.name)}
+                                onMouseEnter={() => setSelectedIndex(index)}
+                            >
+                                <span className={`opacity-50 mr-2 ${index === selectedIndex ? 'text-primary' : ''}`}>#</span>
+                                {tag.name}
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
         </div>
     );
 };
