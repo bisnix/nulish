@@ -118,6 +118,41 @@ body {
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
+  flex-shrink: 0 !important;
+  position: relative;
+  /* Ensure stacking context for tooltips */
+}
+
+/* Fix tooltips to appear above toolbar */
+.nulish-editor [role="tooltip"],
+.nulish-editor .mdxeditor-toolbar [role="tooltip"],
+[data-radix-tooltip-content] {
+  z-index: 100 !important;
+  /* Higher than toolbar's z-index: 50 */
+}
+
+/* CRITICAL: Fix Radix Popper wrapper z-index (default is only 3!) */
+[data-radix-popper-content-wrapper],
+.nulish-editor [data-radix-popper-content-wrapper] {
+  z-index: 100 !important;
+  /* Must be higher than toolbar's z-index: 50 */
+}
+
+/* ROOT CAUSE FIX: The popup-container has z-index: 2 which creates a stacking context.
+   All children z-indexes only work WITHIN that context, not against toolbar (z-index: 50).
+   We must increase the container's z-index to be higher than toolbar. */
+.mdxeditor-popup-container,
+.nulish-editor .mdxeditor-popup-container {
+  z-index: 100 !important;
+  /* This fixes both tooltips AND dropdown menus */
+}
+
+/* Additional fixes for dropdown menus */
+.nulish-editor [role="menu"],
+.nulish-editor [role="listbox"],
+.mdxeditor-select-content,
+._selectContainer_1e2ox_288 {
+  z-index: 100 !important;
 }
 
 /* Force groups (UndoRedo, BoldItalic, etc.) to vertical */

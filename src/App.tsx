@@ -9,6 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { TagInput } from './components/TagInput';
 import { TitleTextarea } from './components/TitleTextarea';
 import { GlobalSettingsModal } from './components/GlobalSettingsModal';
+import { ConfirmDialog } from './components/ConfirmDialog';
 
 // --- Components ---
 
@@ -64,6 +65,7 @@ function FullPageEditor({ params }: { params: { id: string } }) {
 
   // Settings State
   const [showSettings, setShowSettings] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [fontFamily, setFontFamily] = useState<'font-sans' | 'font-droid-serif' | 'font-dm-mono'>('font-sans');
 
   const [fontSize, setFontSize] = useState<'text-editor-sm' | 'text-editor-md' | 'text-editor-lg'>('text-editor-sm');
@@ -234,14 +236,8 @@ function FullPageEditor({ params }: { params: { id: string } }) {
 
                       <button
                         onClick={() => {
-                          if (window.confirm('Are you sure you want to delete this note? This action cannot be undone.')) {
-                            if (note) {
-                              db.deleteNote(note.id).then(() => {
-                                setLocation('/');
-                                window.dispatchEvent(new Event('nulish-notes-updated'));
-                              });
-                            }
-                          }
+                          setShowSettings(false);
+                          setShowDeleteConfirm(true);
                         }}
                         className="w-full flex items-center space-x-2 px-2 py-2 text-xs font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors"
                       >
@@ -304,6 +300,24 @@ function FullPageEditor({ params }: { params: { id: string } }) {
           </div>
         </div>
       </main>
+
+      <ConfirmDialog
+        isOpen={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        onConfirm={() => {
+          if (note) {
+            db.deleteNote(note.id).then(() => {
+              setLocation('/');
+              window.dispatchEvent(new Event('nulish-notes-updated'));
+            });
+          }
+        }}
+        title="Delete Note"
+        message="Are you sure you want to delete this note? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+        isDanger={true}
+      />
     </div >
   );
 }
@@ -488,6 +502,7 @@ function AppLayout() {
                     <Editor
                       markdown={activeNote.content}
                       showToolbar={false}
+                      className="text-editor-lg"
                       onChange={(md) => {
                         setActiveNote(prev => prev ? { ...prev, content: md } : null);
                         saveActiveNote(activeNote.title, md);
