@@ -6,9 +6,10 @@ import { motion } from 'framer-motion';
 
 interface SidebarProps {
     isOpen: boolean;
+    onOpenSettings?: () => void;
 }
 
-export const Sidebar = ({ isOpen }: SidebarProps) => {
+export const Sidebar = ({ isOpen, onOpenSettings }: SidebarProps) => {
     const [tags, setTags] = useState<Tag[]>([]);
     const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
@@ -96,7 +97,10 @@ export const Sidebar = ({ isOpen }: SidebarProps) => {
 
             {/* Footer */}
             <div className="p-4 border-t border-gray-100 dark:border-white/5">
-                <button className="flex items-center space-x-2 text-sm text-gray-500 hover:text-gray-800 dark:hover:text-white transition-colors">
+                <button
+                    onClick={onOpenSettings}
+                    className="flex items-center space-x-2 text-sm text-gray-500 hover:text-gray-800 dark:hover:text-white transition-colors w-full"
+                >
                     <Settings size={16} />
                     <span>Settings</span>
                 </button>

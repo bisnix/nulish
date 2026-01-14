@@ -26,6 +26,11 @@ export default {
                 DEFAULT: "12px",
                 'xl': '20px',
             },
+            fontSize: {
+                'editor-sm': ['18px', '1.6'],
+                'editor-md': ['20px', '1.6'],
+                'editor-lg': ['22px', '1.6'],
+            },
         },
     },
     plugins: [

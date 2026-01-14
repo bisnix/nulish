@@ -8,6 +8,7 @@ import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
 import { TagInput } from './components/TagInput';
 import { TitleTextarea } from './components/TitleTextarea';
+import { GlobalSettingsModal } from './components/GlobalSettingsModal';
 
 // --- Components ---
 
@@ -64,7 +65,8 @@ function FullPageEditor({ params }: { params: { id: string } }) {
   // Settings State
   const [showSettings, setShowSettings] = useState(false);
   const [fontFamily, setFontFamily] = useState<'font-sans' | 'font-droid-serif' | 'font-dm-mono'>('font-sans');
-  const [fontSize, setFontSize] = useState<'prose-base' | 'prose-lg' | 'prose-xl'>('prose-base');
+
+  const [fontSize, setFontSize] = useState<'text-editor-sm' | 'text-editor-md' | 'text-editor-lg'>('text-editor-sm');
   const [frameStyle, setFrameStyle] = useState<'none' | 'vertical' | 'boxed'>('none');
 
   useEffect(() => {
@@ -191,9 +193,9 @@ function FullPageEditor({ params }: { params: { id: string } }) {
                         <div className="text-xs font-medium text-gray-400 mb-2 uppercase tracking-wider">Font Size</div>
                         <div className="flex bg-gray-100 dark:bg-white/5 p-1 rounded-lg">
                           {[
-                            { id: 'prose-base', label: 'Small' },
-                            { id: 'prose-lg', label: 'Medium' },
-                            { id: 'prose-xl', label: 'Large' }
+                            { id: 'text-editor-sm', label: 'Small' },
+                            { id: 'text-editor-md', label: 'Medium' },
+                            { id: 'text-editor-lg', label: 'Large' }
                           ].map(size => (
                             <button
                               key={size.id}
@@ -205,6 +207,7 @@ function FullPageEditor({ params }: { params: { id: string } }) {
                           ))}
                         </div>
                       </div>
+
 
                       <div className="h-px bg-gray-100 dark:bg-white/5" />
 
@@ -281,7 +284,7 @@ function FullPageEditor({ params }: { params: { id: string } }) {
           </div>
         </div>
       </main>
-    </div>
+    </div >
   );
 }
 
@@ -293,6 +296,7 @@ function AppLayout() {
 
   // Sidebar State
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+  const [showGlobalSettings, setShowGlobalSettings] = useState(false);
 
   // Load sidebar state persistence
   useEffect(() => {
@@ -331,7 +335,24 @@ function AppLayout() {
     if (note) {
       setActiveNote(note);
     } else {
-      setActiveNote({ title: '', content: '', id: '', tags: [], updated_at: 0, is_pinned: false });
+      // Create new note with DEFAULTS
+      const defaultFont = localStorage.getItem('default_font') || 'font-sans';
+      const defaultSize = localStorage.getItem('default_size') || 'prose-base';
+      const defaultFrame = localStorage.getItem('default_frame') || 'none';
+
+      // Temporarily save these to note-specific persistence keys so the editor picks them up initially
+      localStorage.setItem('nulish_font', defaultFont);
+      localStorage.setItem('nulish_size', defaultSize);
+      localStorage.setItem('nulish_frame', defaultFrame);
+
+      setActiveNote({
+        title: '',
+        content: '',
+        id: '',
+        tags: [],
+        updated_at: new Date(),
+        created_at: new Date()
+      } as any);
     }
     setIsNoteOpen(true);
   };
@@ -361,7 +382,7 @@ function AppLayout() {
   return (
     <div className={`flex min-h-screen font-sans text-gray-900 dark:text-gray-100 selection:bg-primary/20 bg-background-light dark:bg-background-dark`}>
 
-      <Sidebar isOpen={isSidebarOpen} />
+      <Sidebar isOpen={isSidebarOpen} onOpenSettings={() => setShowGlobalSettings(true)} />
 
       <main className={`flex-1 relative bg-background-light dark:bg-background-dark min-h-screen transition-all duration-300 ${isSidebarOpen ? 'mr-64' : 'mr-0'}`}>
         <header className={`fixed top-0 left-0 right-0 h-16 flex items-center justify-between px-8 z-10 glass-panel border-b-0 transition-all duration-300 ${isSidebarOpen ? 'mr-64' : 'mr-0'}`}>
@@ -460,6 +481,7 @@ function AppLayout() {
             </>
           )}
         </AnimatePresence>
+        <GlobalSettingsModal isOpen={showGlobalSettings} onClose={() => setShowGlobalSettings(false)} />
       </main>
     </div>
   );
