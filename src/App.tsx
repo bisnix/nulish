@@ -60,7 +60,9 @@ function FullPageEditor({ params }: { params: { id: string } }) {
   // Settings State
   const [showSettings, setShowSettings] = useState(false);
   const [fontFamily, setFontFamily] = useState<'font-sans' | 'font-droid-serif' | 'font-dm-mono'>('font-sans');
+
   const [fontSize, setFontSize] = useState<'prose-base' | 'prose-lg' | 'prose-xl'>('prose-base');
+  const [frameStyle, setFrameStyle] = useState<'none' | 'vertical' | 'boxed'>('none');
 
   useEffect(() => {
     // Load settings from local storage if available
@@ -68,6 +70,8 @@ function FullPageEditor({ params }: { params: { id: string } }) {
     if (savedFont) setFontFamily(savedFont as any);
     const savedSize = localStorage.getItem('nulish_size');
     if (savedSize) setFontSize(savedSize as any);
+    const savedFrame = localStorage.getItem('nulish_frame');
+    if (savedFrame) setFrameStyle(savedFrame as any);
 
     if (params.id) {
       db.getNote(params.id).then(n => {
@@ -84,6 +88,11 @@ function FullPageEditor({ params }: { params: { id: string } }) {
   const updateSize = (size: string) => {
     setFontSize(size as any);
     localStorage.setItem('nulish_size', size);
+  };
+
+  const updateFrame = (style: string) => {
+    setFrameStyle(style as any);
+    localStorage.setItem('nulish_frame', style);
   };
 
   const saveNote = async (title: string, content: string, tags?: string[]) => {
@@ -159,6 +168,27 @@ function FullPageEditor({ params }: { params: { id: string } }) {
                       ))}
                     </div>
                   </div>
+
+                  <div className="h-px bg-gray-100 dark:bg-white/5" />
+
+                  <div>
+                    <div className="text-xs font-medium text-gray-400 mb-2 uppercase tracking-wider">Frame</div>
+                    <div className="flex bg-gray-100 dark:bg-white/5 p-1 rounded-lg">
+                      {[
+                        { id: 'none', label: 'None' },
+                        { id: 'vertical', label: 'Sided' },
+                        { id: 'boxed', label: 'Boxed' }
+                      ].map(style => (
+                        <button
+                          key={style.id}
+                          onClick={() => updateFrame(style.id)}
+                          className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-all ${frameStyle === style.id ? 'bg-white dark:bg-card-dark shadow-sm text-primary' : 'text-gray-500 hover:text-gray-800 dark:hover:text-gray-300'}`}
+                        >
+                          {style.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
                 </div>
               </motion.div>
             )}
@@ -167,7 +197,10 @@ function FullPageEditor({ params }: { params: { id: string } }) {
       </div>
 
       <div className="flex-1 overflow-y-auto" onClick={() => setShowSettings(false)}>
-        <div className="max-w-3xl mx-auto py-12 px-8">
+        <div className={`max-w-3xl mx-auto py-12 px-8 transition-all duration-300 
+          ${frameStyle === 'vertical' ? 'border-x border-gray-200 dark:border-white/5 min-h-screen bg-white dark:bg-card-dark' : ''} 
+          ${frameStyle === 'boxed' ? 'border border-gray-200 dark:border-white/5 rounded-xl my-8 min-h-[calc(100vh-8rem)] bg-white dark:bg-card-dark shadow-sm' : ''}
+        `}>
           <TitleTextarea
             value={note.title}
             onChange={(val) => {
