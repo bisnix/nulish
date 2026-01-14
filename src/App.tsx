@@ -21,22 +21,28 @@ function Home({ onOpenNote }: { onOpenNote: (note?: Note) => void }) {
   return (
     <div className="p-8 pt-24 max-w-4xl mx-auto">
       <div className="mb-12">
-        <div className="text-[10px] font-semibold tracking-[0.3em] uppercase opacity-40 mb-2">Daily Focus</div>
-        <h1 className="text-3xl font-serif dark:text-gray-100">
-          {format(new Date(), 'EEEE, d MMMM yyyy')}
-        </h1>
+        <div className="flex items-center space-x-3 w-full bg-gray-100 dark:bg-white/5 pl-4 pr-1.5 py-1.5 rounded-xl text-sm text-gray-500 hover:bg-gray-200 dark:hover:bg-white/10 has-[button:hover]:bg-gray-100 dark:has-[button:hover]:bg-white/5 transition-colors focus-within:ring-2 ring-gray-200 dark:ring-white/10 group">
+          <Search size={18} />
+          <input type="text" placeholder="Search notes..." className="bg-transparent border-none outline-none w-full placeholder:text-gray-400 py-2 h-full" />
+          <button
+            onClick={(e) => { e.stopPropagation(); onOpenNote(); }}
+            className="w-10 h-10 flex-shrink-0 rounded-full bg-black dark:bg-white text-white dark:text-black flex items-center justify-center hover:scale-105 transition-transform shadow-sm"
+            title="Create New Note"
+          >
+            <Plus size={20} />
+          </button>
+        </div>
       </div>
 
-      <div className="grid grid-cols-1 gap-4">
+      <div className="w-[90%] mx-auto flex flex-col divide-y divide-gray-100 dark:divide-white/5">
         {notes.map(note => (
           <div
             key={note.id}
             onClick={() => onOpenNote(note)}
-            className="bg-white dark:bg-card-dark p-6 rounded-xl border border-gray-100 dark:border-white/5 shadow-sm hover:shadow-md transition-all cursor-pointer group"
+            className="group flex items-center justify-between py-4 hover:bg-gray-50 dark:hover:bg-white/5 cursor-pointer transition-colors px-2 rounded-lg"
           >
-            <h3 className="text-lg font-medium mb-2 group-hover:text-primary transition-colors">{note.title || 'Untitled'}</h3>
-            <p className="text-sm opacity-60 line-clamp-2">{note.content.replace(/[#*`_]/g, '') || 'No content'}</p>
-            <div className="mt-4 text-xs opacity-40">{format(note.updated_at, 'MMM d, HH:mm')}</div>
+            <h3 className="text-base font-medium text-gray-800 dark:text-gray-200 group-hover:text-primary transition-colors truncate pr-8">{note.title || 'Untitled'}</h3>
+            <div className="text-xs text-gray-400 whitespace-nowrap opacity-60 group-hover:opacity-100 transition-opacity">{format(note.updated_at, 'MMM d, HH:mm')}</div>
           </div>
         ))}
       </div>
@@ -253,17 +259,12 @@ function AppLayout() {
 
       <main className="flex-1 ml-64 relative bg-background-light dark:bg-background-dark min-h-screen">
         <header className="fixed top-0 left-64 right-0 h-16 flex items-center justify-between px-8 z-10 glass-panel border-b-0">
-          <div className="flex items-center space-x-3 w-full max-w-md bg-gray-100 dark:bg-white/5 px-4 py-2 rounded-lg text-sm text-gray-500">
-            <Search size={16} />
-            <input type="text" placeholder="Search notes..." className="bg-transparent border-none outline-none w-full" />
+          <div className="text-sm font-medium text-gray-500 dark:text-gray-400">
+            {format(new Date(), 'EEEE, d MMMM yyyy')}
           </div>
           <div className="flex items-center space-x-4">
             <button onClick={toggleDark} className="p-2 hover:bg-black/5 dark:hover:bg-white/10 rounded-full">
               {isDark ? <Sun size={20} /> : <Moon size={20} />}
-            </button>
-            <button onClick={() => openNote()} className="flex items-center space-x-2 bg-black dark:bg-white text-white dark:text-black px-4 py-2 rounded-lg font-medium hover:opacity-80 transition-opacity">
-              <Plus size={18} />
-              <span>New Note</span>
             </button>
           </div>
         </header>

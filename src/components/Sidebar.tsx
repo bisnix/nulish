@@ -10,6 +10,13 @@ export const Sidebar = () => {
 
     useEffect(() => {
         db.getTags().then(setTags);
+
+        const handleTagsUpdate = () => {
+            db.getTags().then(setTags);
+        };
+
+        window.addEventListener('nulish-tags-updated', handleTagsUpdate);
+        return () => window.removeEventListener('nulish-tags-updated', handleTagsUpdate);
     }, []);
 
     const toggleExpand = (id: string) => {
