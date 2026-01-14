@@ -48,13 +48,34 @@ function FullPageEditor({ params }: { params: { id: string } }) {
   const [note, setNote] = useState<Note | null>(null);
   const [, setLocation] = useLocation();
 
+  // Settings State
+  const [showSettings, setShowSettings] = useState(false);
+  const [fontFamily, setFontFamily] = useState<'font-sans' | 'font-droid-serif' | 'font-dm-mono'>('font-sans');
+  const [fontSize, setFontSize] = useState<'prose-base' | 'prose-lg' | 'prose-xl'>('prose-base');
+
   useEffect(() => {
+    // Load settings from local storage if available
+    const savedFont = localStorage.getItem('nulish_font');
+    if (savedFont) setFontFamily(savedFont as any);
+    const savedSize = localStorage.getItem('nulish_size');
+    if (savedSize) setFontSize(savedSize as any);
+
     if (params.id) {
       db.getNote(params.id).then(n => {
         if (n) setNote(n);
       });
     }
   }, [params.id]);
+
+  const updateFont = (font: string) => {
+    setFontFamily(font as any);
+    localStorage.setItem('nulish_font', font);
+  };
+
+  const updateSize = (size: string) => {
+    setFontSize(size as any);
+    localStorage.setItem('nulish_size', size);
+  };
 
   const saveNote = async (title: string, content: string) => {
     if (!note) return;
@@ -65,19 +86,81 @@ function FullPageEditor({ params }: { params: { id: string } }) {
   if (!note) return <div className="p-8">Loading...</div>;
 
   return (
-    <div className="flex flex-col h-screen bg-white dark:bg-background-dark">
+    <div className="flex flex-col h-screen bg-white dark:bg-background-dark animate-in fade-in duration-500">
       {/* Minimal Header */}
-      <div className="h-16 flex items-center justify-between px-8 border-b border-gray-100 dark:border-white/5">
+      <div className="h-16 flex items-center justify-between px-8 border-b border-gray-100 dark:border-white/5 relative z-50">
         <button onClick={() => setLocation('/')} className="p-2 hover:bg-gray-100 dark:hover:bg-white/10 rounded-full transition-colors">
           <ArrowLeft size={20} className="opacity-50" />
         </button>
         <div className="text-sm opacity-40 font-medium">Edited {format(note.updated_at, 'MMM d, HH:mm')}</div>
-        <button className="p-2 hover:bg-gray-100 dark:hover:bg-white/10 rounded-full transition-colors">
-          <MoreHorizontal size={20} className="opacity-50" />
-        </button>
+
+        <div className="relative">
+          <button
+            onClick={() => setShowSettings(!showSettings)}
+            className={`p-2 rounded-full transition-colors ${showSettings ? 'bg-gray-100 dark:bg-white/10 text-primary' : 'hover:bg-gray-100 dark:hover:bg-white/10'}`}
+          >
+            <MoreHorizontal size={20} className={showSettings ? "opacity-100" : "opacity-50"} />
+          </button>
+
+          <AnimatePresence>
+            {showSettings && (
+              <motion.div
+                initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                className="absolute right-0 top-12 w-64 bg-white dark:bg-card-dark rounded-xl shadow-xl border border-gray-200 dark:border-white/10 p-4 z-50"
+              >
+                <div className="space-y-4">
+                  <div>
+                    <div className="text-xs font-medium text-gray-400 mb-2 uppercase tracking-wider">Font Family</div>
+                    <div className="flex flex-col space-y-1">
+                      {[
+                        { id: 'font-sans', label: 'Default' },
+                        { id: 'font-droid-serif', label: 'Serif' },
+                        { id: 'font-dm-mono', label: 'Mono' }
+                      ].map(font => (
+                        <button
+                          key={font.id}
+                          onClick={() => updateFont(font.id)}
+                          className={`flex items-center justify-between px-3 py-2 rounded-lg text-sm transition-colors ${fontFamily === font.id ? 'bg-black/5 dark:bg-white/10 font-medium' : 'hover:bg-black/5 dark:hover:bg-white/5 text-gray-500'}`}
+                        >
+                          <span className={font.id === 'font-droid-serif' ? 'font-serif' : font.id === 'font-dm-mono' ? 'font-mono' : 'font-sans'}>
+                            {font.label}
+                          </span>
+                          {fontFamily === font.id && <div className="w-2 h-2 rounded-full bg-primary" />}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div className="h-px bg-gray-100 dark:bg-white/5" />
+
+                  <div>
+                    <div className="text-xs font-medium text-gray-400 mb-2 uppercase tracking-wider">Font Size</div>
+                    <div className="flex bg-gray-100 dark:bg-white/5 p-1 rounded-lg">
+                      {[
+                        { id: 'prose-base', label: 'Small' },
+                        { id: 'prose-lg', label: 'Medium' },
+                        { id: 'prose-xl', label: 'Large' }
+                      ].map(size => (
+                        <button
+                          key={size.id}
+                          onClick={() => updateSize(size.id)}
+                          className={`flex-1 py-1.5 text-xs font-medium rounded-md transition-all ${fontSize === size.id ? 'bg-white dark:bg-card-dark shadow-sm text-primary' : 'text-gray-500 hover:text-gray-800 dark:hover:text-gray-300'}`}
+                        >
+                          {size.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
       </div>
 
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto" onClick={() => setShowSettings(false)}>
         <div className="max-w-3xl mx-auto py-12 px-8">
           <input
             value={note.title}
@@ -86,10 +169,11 @@ function FullPageEditor({ params }: { params: { id: string } }) {
               saveNote(e.target.value, note.content);
             }}
             placeholder="Note Title"
-            className="text-4xl font-serif font-bold bg-transparent outline-none w-full mb-8 placeholder:opacity-30"
+            className={`text-4xl font-bold bg-transparent outline-none w-full mb-8 placeholder:opacity-30 ${fontFamily}`}
           />
           <Editor
             markdown={note.content}
+            className={`${fontFamily} ${fontSize}`}
             onChange={md => {
               setNote({ ...note, content: md });
               saveNote(note.title, md);

@@ -12,9 +12,10 @@ interface EditorProps {
     markdown: string;
     onChange: (markdown: string) => void;
     editorRef?: React.MutableRefObject<MDXEditorMethods | null>;
+    className?: string;
 }
 
-export const Editor: React.FC<EditorProps> = ({ markdown, onChange, editorRef }) => {
+export const Editor: React.FC<EditorProps> = ({ markdown, onChange, editorRef, className }) => {
     const isDark = document.documentElement.classList.contains('dark');
 
     return (
@@ -24,7 +25,7 @@ export const Editor: React.FC<EditorProps> = ({ markdown, onChange, editorRef })
                 markdown={markdown}
                 onChange={onChange}
                 className={isDark ? 'dark-theme' : ''}
-                contentEditableClassName="prose dark:prose-invert max-w-none focus:outline-none min-h-[50vh] px-8 py-4 prose-p:my-2 prose-headings:font-serif prose-headings:font-normal"
+                contentEditableClassName={`prose dark:prose-invert max-w-none focus:outline-none min-h-[50vh] px-8 py-4 prose-headings:font-serif prose-headings:font-normal ${className || ''}`}
                 plugins={[
                     headingsPlugin(),
                     listsPlugin(),

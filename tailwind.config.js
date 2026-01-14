@@ -19,6 +19,8 @@ export default {
                 sans: ["Inter", "sans-serif"],
                 display: ["Inter", "sans-serif"],
                 serif: ["Playfair Display", "serif"],
+                "droid-serif": ["Droid Serif", "serif"],
+                "dm-mono": ["DM Mono", "monospace"],
             },
             borderRadius: {
                 DEFAULT: "12px",
