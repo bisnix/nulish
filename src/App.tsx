@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { Route, Switch, useLocation } from 'wouter';
-import { Plus, Search, Maximize2, X, Moon, Sun, ArrowLeft, MoreHorizontal, PanelRight } from 'lucide-react';
+import { Plus, Search, Maximize2, X, Moon, Sun, ArrowLeft, MoreHorizontal, PanelRight, Trash2 } from 'lucide-react';
 import { Editor } from './components/Editor';
 import { db, type Note } from './lib/db';
 import { format } from 'date-fns';
@@ -229,7 +229,27 @@ function FullPageEditor({ params }: { params: { id: string } }) {
                           ))}
                         </div>
                       </div>
+
+                      <div className="h-px bg-gray-100 dark:bg-white/5" />
+
+                      <button
+                        onClick={() => {
+                          if (window.confirm('Are you sure you want to delete this note? This action cannot be undone.')) {
+                            if (note) {
+                              db.deleteNote(note.id).then(() => {
+                                setLocation('/');
+                                window.dispatchEvent(new Event('nulish-notes-updated'));
+                              });
+                            }
+                          }
+                        }}
+                        className="w-full flex items-center space-x-2 px-2 py-2 text-xs font-medium text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-colors"
+                      >
+                        <Trash2 size={14} />
+                        <span>Delete Note</span>
+                      </button>
                     </div>
+
                   </motion.div>
                 )}
               </AnimatePresence>
@@ -467,6 +487,7 @@ function AppLayout() {
                   <div className="px-8">
                     <Editor
                       markdown={activeNote.content}
+                      showToolbar={false}
                       onChange={(md) => {
                         setActiveNote(prev => prev ? { ...prev, content: md } : null);
                         saveActiveNote(activeNote.title, md);

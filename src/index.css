@@ -32,3 +32,99 @@ body {
 ::-webkit-scrollbar-thumb:hover {
   @apply bg-gray-400 dark:bg-gray-600;
 }
+
+/* Vertical Floating Toolbar Overrides */
+.nulish-editor {
+  position: relative;
+  /* Context for absolute positioning relative to editor wrapper */
+}
+
+/* Target the toolbar directly */
+.nulish-editor .mdxeditor-toolbar {
+  position: fixed !important;
+  /* Fixed to viewport means it floats with scroll */
+  top: 100px !important;
+  left: calc(50% + 420px) !important;
+  /* Center + Half Width (384px) + Gap (36px) = Outside */
+  margin-left: 0 !important;
+  transform: none !important;
+
+  /* Vertical Layout */
+  display: flex !important;
+  flex-direction: column !important;
+  width: auto !important;
+  height: auto !important;
+  max-width: 44px !important;
+
+  /* Reset horizontal spacing */
+  gap: 8px !important;
+  padding: 8px 4px !important;
+
+  /* Styling */
+  background: rgba(255, 255, 255, 0.8) !important;
+  backdrop-filter: blur(10px);
+  border: 1px solid #e5e7eb !important;
+  border-radius: 999px !important;
+  /* Pill shape */
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1) !important;
+  z-index: 50;
+
+  /* No Scrollbar */
+  overflow: visible !important;
+}
+
+/* Force ALL nested groups AND their children to vertical */
+.nulish-editor .mdxeditor-toolbar div[role="group"],
+.nulish-editor .mdxeditor-toolbar div[class*="Group"],
+.nulish-editor .mdxeditor-toolbar>div {
+  display: flex !important;
+  flex-direction: column !important;
+  width: 100% !important;
+  align-items: center !important;
+  gap: 4px !important;
+}
+
+/* Hide original label of Block Type button but keep it readable for JS */
+.nulish-editor .mdxeditor-toolbar button[aria-label="Block type"]>span:first-child {
+  visibility: hidden;
+  width: 0 !important;
+  padding: 0 !important;
+  position: absolute;
+}
+
+/* Style our custom label */
+.nulish-editor .mdxeditor-toolbar button[aria-label="Block type"] .short-label {
+  font-size: 13px;
+  font-weight: 700;
+  color: inherit;
+  min-width: 24px;
+  text-align: center;
+  display: inline-block;
+}
+
+/* Dark mode styling */
+.dark .nulish-editor .mdxeditor-toolbar {
+  background: rgba(31, 41, 55, 0.8) !important;
+  /* gray-800 */
+  border-color: rgba(255, 255, 255, 0.1) !important;
+}
+
+/* Ensure buttons stack and size nicely */
+.nulish-editor .mdxeditor-toolbar button {
+  width: 32px !important;
+  height: 32px !important;
+  min-width: 32px !important;
+  padding: 0 !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* Force groups (UndoRedo, BoldItalic, etc.) to vertical */
+.nulish-editor .mdxeditor-toolbar>div {
+  display: flex !important;
+  flex-direction: column !important;
+  width: 100% !important;
+  align-items: center !important;
+  gap: 4px !important;
+}
