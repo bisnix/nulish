@@ -4,6 +4,7 @@ export interface Note {
     id: string;
     title: string;
     content: string;
+    tags: string[];
     updated_at: number;
     is_pinned: boolean;
 }
@@ -55,12 +56,11 @@ class LocalDB {
                 this.set('notes', notes);
                 savedNote = updated;
             } else {
-                // If ID provided but not found (rare), treat as new or error?
-                // Fallback to create new for safety in this mock
                 savedNote = {
                     id: uuidv4(),
                     title: note.title || 'Untitled',
                     content: note.content || '',
+                    tags: note.tags || [],
                     updated_at: now,
                     is_pinned: note.is_pinned || false
                 };
@@ -72,6 +72,7 @@ class LocalDB {
                 id: uuidv4(),
                 title: note.title || 'Untitled',
                 content: note.content || '',
+                tags: note.tags || [],
                 updated_at: now,
                 is_pinned: note.is_pinned || false
             };
@@ -95,58 +96,85 @@ class LocalDB {
     }
 
     private async extractTagsFromContent(content: string) {
-        // Regex to find #tag or #nested/tag
-        // Matches # followed by alphanumeric/underscore, optionally followed by / and more chars
+        // We will simply call cleanupUnusedTags which regenerates the entire tag tree from all notes.
+        // This handles addition of new tags AND removal of stale ones in one go.
+        // It is the source of truth based on current content.
+        await this.cleanupUnusedTags();
+    }
+
+    // Remove tags that are no longer found in any note
+    // This cleans up partial tags like 'w', 'wo' created during typing
+    async cleanupUnusedTags() {
+        const notes = await this.getNotes();
+        const tags = await this.getTags();
+        const usedTagNames = new Set<string>();
+
         const regex = /#(\w+(?:\/\w+)*)/g;
-        const matches = content.match(regex);
 
-        if (!matches) return;
-
-        const currentTags = await this.getTags();
-        let changed = false;
-
-        // Helper to find tag by name (case insensitive?) - Keeping case sensitive for now as requested by user input usually
-        const findTag = (name: string) => currentTags.find(t => t.name === name);
-
-        for (const match of matches) {
-            const fullPath = match.substring(1); // Remove #
-            const parts = fullPath.split('/');
-
-            let parentId: string | null = null;
-            let pathAccumulator = '';
-
-            for (const part of parts) {
-                pathAccumulator = pathAccumulator ? `${pathAccumulator}/${part}` : part;
-                const existing = currentTags.find(t => {
-                    // Logic: if nested, name is just the part? 
-                    // Based on current sidebar logic: 
-                    // renderTag takes tag, finds children by parent_id.
-                    // So 'name' should probably be just the 'part' (e.g. 'design'), not 'work/design'.
-                    // But we need to distinguish 'work/design' from 'hobby/design'.
-                    // So we strictly check parent_id.
-                    return t.name === part && t.parent_id === parentId;
+        notes.forEach(note => {
+            const matches = note.content.match(regex);
+            if (matches) {
+                matches.forEach(m => {
+                    const fullPath = m.substring(1);
+                    const parts = fullPath.split('/');
+                    // For nested tags, we must consider all parent paths as "used"
+                    let pathAcc = '';
+                    parts.forEach(part => {
+                        // Note: Our DB stores 'name' as just the segment, and 'parent_id'.
+                        // To properly identify 'used' tags we'd need to reconstruct tree.
+                        // Simpler approach for this MVP:
+                        // Just keep tags if they are *part of* a valid active tag structure?
+                        // Actually, simpler:
+                        // We generated tags based on splitting matches.
+                        // We can just re-generate the entire desired tag tree from scratch based on current notes
+                        // And replace the tags table (preserving IDs where possible if needed, or just wiping).
+                        // Since IDs are UUIDs and not referenced except by parent_id,
+                        // And we don't have metadata on tags yet...
+                        // Re-building might be cleaner.
+                        // BUT, to avoid ID churn if we add features later, let's try to match.
+                    });
                 });
-
-                if (existing) {
-                    parentId = existing.id;
-                } else {
-                    // Create new tag
-                    const newTag: Tag = {
-                        id: uuidv4(),
-                        name: part,
-                        parent_id: parentId,
-                        created_at: Date.now()
-                    };
-                    currentTags.push(newTag);
-                    parentId = newTag.id;
-                    changed = true;
-                }
             }
-        }
+        });
 
-        if (changed) {
-            this.set('tags', currentTags);
-            // Notify UI
+        // Re-generative approach is safest for "Zero Config" to clear junk.
+        // We will Re-Extract EVERYTHING from ALL notes and Replace 'tags'.
+        // This is expensive but fine for local text app.
+
+        let newTags: Tag[] = [];
+
+        // Helper
+        const getOrAddTag = (name: string, parentId: string | null) => {
+            let existing = newTags.find(t => t.name === name && t.parent_id === parentId);
+            if (!existing) {
+                existing = {
+                    id: uuidv4(),
+                    name,
+                    parent_id: parentId,
+                    created_at: Date.now()
+                };
+                newTags.push(existing);
+            }
+            return existing;
+        };
+
+        notes.forEach(note => {
+            const matches = note.content.match(regex);
+            if (matches) {
+                matches.forEach(m => {
+                    const parts = m.substring(1).split('/');
+                    let parentId: string | null = null;
+                    parts.forEach(part => {
+                        const tag = getOrAddTag(part, parentId);
+                        parentId = tag.id;
+                    });
+                });
+            }
+        });
+
+        // Check if different
+        if (JSON.stringify(newTags.map(t => t.name).sort()) !== JSON.stringify(tags.map(t => t.name).sort())) {
+            this.set('tags', newTags);
             window.dispatchEvent(new Event('nulish-tags-updated'));
         }
     }

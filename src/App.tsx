@@ -1,11 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Sidebar } from './components/Sidebar';
-import { Route, Switch, useLocation, useRoute } from 'wouter';
+import { Route, Switch, useLocation } from 'wouter';
 import { Plus, Search, Maximize2, X, Moon, Sun, ArrowLeft, MoreHorizontal } from 'lucide-react';
 import { Editor } from './components/Editor';
 import { db, type Note } from './lib/db';
 import { format } from 'date-fns';
 import { motion, AnimatePresence } from 'framer-motion';
+import { TagInput } from './components/TagInput';
+import { TitleTextarea } from './components/TitleTextarea';
 
 // --- Components ---
 
@@ -53,6 +55,7 @@ function Home({ onOpenNote }: { onOpenNote: (note?: Note) => void }) {
 function FullPageEditor({ params }: { params: { id: string } }) {
   const [note, setNote] = useState<Note | null>(null);
   const [, setLocation] = useLocation();
+  const saveTimeoutRef = useRef<number | undefined>(undefined);
 
   // Settings State
   const [showSettings, setShowSettings] = useState(false);
@@ -83,9 +86,9 @@ function FullPageEditor({ params }: { params: { id: string } }) {
     localStorage.setItem('nulish_size', size);
   };
 
-  const saveNote = async (title: string, content: string) => {
+  const saveNote = async (title: string, content: string, tags?: string[]) => {
     if (!note) return;
-    const updated = await db.saveNote({ ...note, title, content });
+    const updated = await db.saveNote({ ...note, title, content, tags: tags !== undefined ? tags : note.tags });
     setNote(updated);
   };
 
@@ -165,27 +168,43 @@ function FullPageEditor({ params }: { params: { id: string } }) {
 
       <div className="flex-1 overflow-y-auto" onClick={() => setShowSettings(false)}>
         <div className="max-w-3xl mx-auto py-12 px-8">
-          <textarea
+          <TitleTextarea
             value={note.title}
-            rows={1}
-            onInput={(e) => {
-              const target = e.target as HTMLTextAreaElement;
-              target.style.height = 'auto';
-              target.style.height = target.scrollHeight + 'px';
+            onChange={(val) => {
+              setNote({ ...note, title: val });
+              if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+              saveTimeoutRef.current = window.setTimeout(() => {
+                saveNote(val, note.content, note.tags);
+              }, 1000);
             }}
-            onChange={e => {
-              setNote({ ...note, title: e.target.value });
-              saveNote(e.target.value, note.content);
-            }}
-            placeholder="Note Title"
-            className={`text-4xl font-bold bg-transparent outline-none w-full mb-8 placeholder:opacity-30 text-left resize-none overflow-hidden ${fontFamily}`}
+            className={fontFamily}
           />
+
+          <div className="border-t border-gray-100 dark:border-white/5" />
+
+          <div className="py-4">
+            <TagInput
+              tags={note.tags || []}
+              showIcon={false}
+              onChange={(newTags) => {
+                setNote({ ...note, tags: newTags });
+                saveNote(note.title, note.content, newTags);
+              }}
+            />
+          </div>
+
+          <div className="border-t border-gray-100 dark:border-white/5" />
+
           <Editor
             markdown={note.content}
             className={`${fontFamily} ${fontSize}`}
             onChange={md => {
               setNote({ ...note, content: md });
-              saveNote(note.title, md);
+
+              if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+              saveTimeoutRef.current = window.setTimeout(() => {
+                saveNote(note.title, md, note.tags);
+              }, 1000);
             }}
           />
         </div>
@@ -225,7 +244,7 @@ function AppLayout() {
     if (note) {
       setActiveNote(note);
     } else {
-      setActiveNote({ title: '', content: '', id: '', updated_at: 0, is_pinned: false });
+      setActiveNote({ title: '', content: '', id: '', tags: [], updated_at: 0, is_pinned: false });
     }
     setIsNoteOpen(true);
   };
@@ -235,22 +254,21 @@ function AppLayout() {
     setActiveNote(null);
   };
 
-  const saveActiveNote = async (title: string, content: string) => {
+  const saveActiveNote = async (title: string, content: string, tags?: string[]) => {
     if (!activeNote) return;
-    const saved = await db.saveNote({ ...activeNote, title, content });
+    const saved = await db.saveNote({ ...activeNote, title, content, tags: tags !== undefined ? tags : activeNote.tags });
     setActiveNote(saved);
   };
 
   const maximizeNote = async () => {
     if (!activeNote) return;
-    // Ensure it's saved first so we have an ID
     let id = activeNote.id;
     if (!id) {
       const saved = await db.saveNote(activeNote);
       id = saved.id;
     }
-    closeNote(); // Close modal
-    setLocation(`/note/${id}`); // Navigate
+    closeNote();
+    setLocation(`/note/${id}`);
   };
 
   return (
@@ -288,17 +306,7 @@ function AppLayout() {
                 transition={{ type: "spring", bounce: 0.2, duration: 0.4 }}
                 className="fixed top-1/2 left-1/2 w-[600px] h-[700px] bg-white dark:bg-card-dark rounded-xl shadow-2xl border border-gray-200 dark:border-white/10 flex flex-col z-50 overflow-hidden"
               >
-                <div className="h-14 flex items-center justify-between px-4 border-b border-gray-100 dark:border-white/5 bg-white/50 dark:bg-white/5 backdrop-blur-sm">
-                  <input
-                    value={activeNote.title}
-                    onChange={(e) => {
-                      const val = e.target.value;
-                      setActiveNote(prev => prev ? { ...prev, title: val } : null);
-                      saveActiveNote(val, activeNote.content);
-                    }}
-                    placeholder="Note Title"
-                    className="bg-transparent font-medium outline-none text-lg flex-1 mr-4"
-                  />
+                <div className="h-14 flex items-center justify-end px-4 backdrop-blur-sm z-50">
                   <div className="flex items-center space-x-1">
                     <button onClick={maximizeNote} className="p-2 hover:bg-black/5 dark:hover:bg-white/10 rounded-md text-gray-400 hover:text-gray-800 dark:hover:text-white transition-colors" title="Expand to Full Screen">
                       <Maximize2 size={16} />
@@ -308,14 +316,51 @@ function AppLayout() {
                     </button>
                   </div>
                 </div>
-                <div className="flex-1 overflow-y-auto bg-white dark:bg-card-dark flex flex-col">
-                  <Editor
-                    markdown={activeNote.content}
-                    onChange={(md) => {
-                      setActiveNote(prev => prev ? { ...prev, content: md } : null);
-                      saveActiveNote(activeNote.title, md);
+                <div className="flex-1 overflow-y-auto bg-white dark:bg-card-dark flex flex-col pb-8">
+                  <div
+                    contentEditable
+                    suppressContentEditableWarning
+                    onBlur={(e) => {
+                      const val = e.currentTarget.textContent || '';
+                      setActiveNote(prev => prev ? { ...prev, title: val } : null);
+                      saveActiveNote(val, activeNote.content);
                     }}
-                  />
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        e.currentTarget.blur();
+                      }
+                    }}
+                    data-placeholder="Note Title"
+                    className="bg-transparent font-bold text-3xl outline-none w-full pb-4 px-8 text-gray-900 dark:text-gray-100 break-words empty:before:content-[attr(data-placeholder)] empty:before:text-gray-400 empty:before:opacity-30"
+                  >
+                    {activeNote.title}
+                  </div>
+
+                  <div className="border-t border-gray-100 dark:border-white/5 mx-8" />
+
+                  <div className="py-4 px-8">
+                    <TagInput
+                      tags={activeNote.tags || []}
+                      showIcon={false}
+                      onChange={(newTags) => {
+                        setActiveNote(prev => prev ? { ...prev, tags: newTags } : null);
+                        saveActiveNote(activeNote.title, activeNote.content, newTags);
+                      }}
+                    />
+                  </div>
+
+                  <div className="border-t border-gray-100 dark:border-white/5 mx-8" />
+
+                  <div className="px-8">
+                    <Editor
+                      markdown={activeNote.content}
+                      onChange={(md) => {
+                        setActiveNote(prev => prev ? { ...prev, content: md } : null);
+                        saveActiveNote(activeNote.title, md);
+                      }}
+                    />
+                  </div>
                 </div>
                 <div className="h-8 flex items-center px-4 text-[10px] text-gray-400 border-t border-gray-100 dark:border-white/5 bg-gray-50 dark:bg-black/20">
                   {activeNote.updated_at ? `Saved ${format(activeNote.updated_at, 'HH:mm:ss')}` : 'Unsaved'}

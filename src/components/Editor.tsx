@@ -25,7 +25,7 @@ export const Editor: React.FC<EditorProps> = ({ markdown, onChange, editorRef, c
                 markdown={markdown}
                 onChange={onChange}
                 className={isDark ? 'dark-theme' : ''}
-                contentEditableClassName={`prose dark:prose-invert max-w-none focus:outline-none min-h-[50vh] px-8 py-4 prose-headings:font-serif prose-headings:font-normal ${className || ''}`}
+                contentEditableClassName={`prose dark:prose-invert max-w-none focus:outline-none min-h-[50vh] py-4 prose-headings:font-serif prose-headings:font-normal ${className || ''}`}
                 plugins={[
                     headingsPlugin(),
                     listsPlugin(),
