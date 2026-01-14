@@ -118,7 +118,7 @@ export const TagInput = ({ tags, onChange, showIcon = true }: TagInputProps) => 
                     onBlur={() => setTimeout(() => setShowSuggestions(false), 200)}
                     placeholder={tags.length === 0 ? "Add tags..." : ""}
                     style={{ width: tags.length === 0 ? 'auto' : Math.max(10, inputValue.length * 10) + 'px', minWidth: tags.length === 0 ? '80px' : '4px' }}
-                    className="bg-transparent border-none outline-none text-sm text-gray-600 dark:text-gray-300 placeholder:text-gray-400 text-left"
+                    className={`bg-transparent border-none outline-none text-sm text-gray-600 dark:text-gray-300 placeholder:text-gray-400 ${(!inputValue && tags.length === 0) ? 'text-center' : 'text-left'}`}
                 />
 
                 {/* Suggestions Dropdown */}
