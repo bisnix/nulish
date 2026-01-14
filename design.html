@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Overthink - Daily Focus</title>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@200;300;400;500&amp;family=Playfair+Display:ital,wght@0,400;1,400&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<script>
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              primary: "#8B5CF6",
+              "background-light": "#F9FAFB",
+              "background-dark": "#0D0D0D",
+              "card-dark": "#161616",
+              "accent-yellow": "#D4AF37",
+              "accent-blue": "#4A90E2",
+            },
+            fontFamily: {
+              sans: ["Inter", "sans-serif"],
+              display: ["Inter", "sans-serif"],
+              serif: ["Playfair Display", "serif"],
+            },
+            borderRadius: {
+              DEFAULT: "12px",
+              'xl': '20px',
+            },
+          },
+        },
+      };
+    </script>
+<style>
+        body {
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        .glass-panel {
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-gray-800 dark:text-gray-300 min-h-screen transition-colors duration-300">
+<header class="fixed top-0 left-0 right-0 h-16 flex items-center justify-between px-8 z-40">
+<div class="flex items-center space-x-2 opacity-60 hover:opacity-100 transition-opacity cursor-default">
+</div>
+<div class="flex items-center space-x-5 opacity-60">
+<button class="hover:opacity-100 transition-opacity">
+<span class="material-icons-outlined text-xl">add</span>
+</button>
+<button class="hover:opacity-100 transition-opacity">
+<span class="material-icons-outlined text-xl">search</span>
+</button>
+<button class="hover:opacity-100 transition-opacity">
+<span class="material-icons-outlined text-xl">layers</span>
+</button>
+<button class="hover:opacity-100 transition-opacity">
+<span class="material-icons-outlined text-xl">settings</span>
+</button>
+<button class="hover:opacity-100 transition-opacity">
+<span class="material-icons-outlined text-xl">menu</span>
+</button>
+</div>
+</header>
+<main class="pt-32 pb-20 px-4 flex justify-center">
+<div class="max-w-2xl w-full">
+<div class="relative bg-white dark:bg-card-dark rounded-xl p-10 shadow-2xl border border-gray-100 dark:border-white/5 transition-all">
+<div class="text-[10px] font-semibold tracking-[0.3em] uppercase opacity-40 mb-6">
+                Daily Focus
+            </div>
+<h1 class="text-3xl font-light tracking-tight mb-12 dark:text-gray-100">
+                Monday, 12 January 2026
+            </h1>
+<div class="space-y-8">
+<p class="text-lg font-light opacity-70 leading-relaxed">
+                    No meetings ahead — clear runway to tackle your list.
+                </p>
+<div class="space-y-4">
+<h2 class="text-sm font-medium opacity-40 uppercase tracking-widest">Priority tasks:</h2>
+<ul class="space-y-3 font-light">
+<li class="flex items-baseline group">
+<span class="mr-3 text-accent-yellow opacity-60">•</span>
+<div class="flex-1">
+<span class="text-accent-yellow border-b border-accent-yellow/30 pb-0.5 cursor-pointer hover:border-accent-yellow transition-all">Add Todoist thumbnail</span>
+<span class="opacity-50 ml-1">— due today</span>
+</div>
+</li>
+<li class="flex items-baseline group">
+<span class="mr-3 text-accent-yellow opacity-60">•</span>
+<div class="flex-1">
+<span class="text-accent-yellow border-b border-accent-yellow/30 pb-0.5 cursor-pointer hover:border-accent-yellow transition-all">Book ElevenLabs event</span>
+<span class="opacity-50 ml-1">— accommodation needed, due tomorrow</span>
+</div>
+</li>
+<li class="flex items-baseline group">
+<span class="mr-3 text-accent-yellow opacity-60">•</span>
+<div class="flex-1">
+<span class="text-accent-yellow border-b border-accent-yellow/30 pb-0.5 cursor-pointer hover:border-accent-yellow transition-all">Add Sunsama ads to the list</span>
+</div>
+</li>
+<li class="flex items-baseline group">
+<span class="mr-3 text-accent-yellow opacity-60">•</span>
+<div class="flex-1">
+<span class="text-accent-yellow border-b border-accent-yellow/30 pb-0.5 cursor-pointer hover:border-accent-yellow transition-all">Add Todoist Invoice &amp; Issue Video</span>
+</div>
+</li>
+</ul>
+</div>
+<div class="pt-8 mt-12 border-t border-gray-100 dark:border-white/5">
+<p class="font-serif italic text-lg leading-relaxed text-gray-600 dark:text-gray-400">
+<span class="text-accent-blue opacity-80">Happy this morning, making progress on the app</span> but 
+                        <span class="text-accent-blue opacity-80">feeling intense and scared</span> about the house sale by afternoon. 
+                        The Todoist work might be a good focus while you wait for news — concrete progress you can control.
+                    </p>
+</div>
+</div>
+</div>
+<div class="mt-8 flex justify-center opacity-10">
+<div class="h-1 w-24 bg-gray-500 rounded-full"></div>
+</div>
+</div>
+</main>
+<button class="fixed bottom-6 right-6 p-3 bg-white/10 glass-panel rounded-full hover:bg-white/20 transition-all z-50" onclick="document.documentElement.classList.toggle('dark')">
+<span class="material-icons-outlined dark:hidden">dark_mode</span>
+<span class="material-icons-outlined hidden dark:block text-white">light_mode</span>
+</button>
+
+</body></html>
