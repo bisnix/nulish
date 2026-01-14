@@ -59,16 +59,36 @@ export const TagInput = ({ tags, onChange, showIcon = true }: TagInputProps) => 
         onChange(newTags);
     };
 
+    // Build full paths for tags to allow searching "parent/child"
+    const getFullPath = (tag: Tag, tagsMap: Map<string, Tag>): string => {
+        if (!tag.parent_id) return tag.name;
+        const parent = tagsMap.get(tag.parent_id);
+        return parent ? `${getFullPath(parent, tagsMap)}/${tag.name}` : tag.name;
+    };
+
     // Filter suggestions based on input
     useEffect(() => {
         if (!inputValue) {
             setSuggestions([]);
             return;
         }
-        const matches = allTags.filter(t => t.name.toLowerCase().includes(inputValue.toLowerCase()));
+
+        // Create a map for quick parent lookup
+        const tagsMap = new Map(allTags.map(t => [t.id, t]));
+
+        // Enhance tags with full paths for searching
+        const tagsWithPaths = allTags.map(tag => ({
+            ...tag,
+            fullPath: getFullPath(tag, tagsMap)
+        }));
+
+        const matches = tagsWithPaths
+            .filter(t => t.fullPath.toLowerCase().includes(inputValue.toLowerCase()))
+            .map(t => ({ ...t, name: t.fullPath })); // Use full path for display/selection
+
         setSuggestions(matches);
         setShowSuggestions(matches.length > 0);
-        setSelectedIndex(0); // Select first match by default
+        setSelectedIndex(0);
     }, [inputValue, allTags]);
 
     return (

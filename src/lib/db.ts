@@ -159,10 +159,26 @@ class LocalDB {
         };
 
         notes.forEach(note => {
+            // Process content hashtags
             const matches = note.content.match(regex);
             if (matches) {
                 matches.forEach(m => {
                     const parts = m.substring(1).split('/');
+                    let parentId: string | null = null;
+                    parts.forEach(part => {
+                        const tag = getOrAddTag(part, parentId);
+                        parentId = tag.id;
+                    });
+                });
+            }
+
+            // Process metadata tags (from UI input)
+            if (note.tags && note.tags.length > 0) {
+                note.tags.forEach(t => {
+                    // Handle potential nested tags in metadata if user typed "parent/child"
+                    // Also handle if user typed "#tag" in input (strip #)
+                    const cleanTag = t.startsWith('#') ? t.substring(1) : t;
+                    const parts = cleanTag.split('/');
                     let parentId: string | null = null;
                     parts.forEach(part => {
                         const tag = getOrAddTag(part, parentId);
