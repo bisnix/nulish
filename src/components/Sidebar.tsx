@@ -4,7 +4,11 @@ import { ChevronRight, ChevronDown, Hash, Plus, Settings } from 'lucide-react';
 import clsx from 'clsx';
 import { motion } from 'framer-motion';
 
-export const Sidebar = () => {
+interface SidebarProps {
+    isOpen: boolean;
+}
+
+export const Sidebar = ({ isOpen }: SidebarProps) => {
     const [tags, setTags] = useState<Tag[]>([]);
     const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
@@ -49,7 +53,7 @@ export const Sidebar = () => {
                         }}
                     >
                         {hasChildren ? (
-                            isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} />
+                            isExpanded ? <ChevronDown size={14} /> : <ChevronRight size={14} /> // ChevronRight is fine on right side too
                         ) : <div className="w-[14px]" />}
                     </div>
 
@@ -73,7 +77,9 @@ export const Sidebar = () => {
     const rootTags = tags.filter(t => !t.parent_id);
 
     return (
-        <aside className="w-64 h-screen fixed left-0 top-0 border-r border-gray-200 dark:border-white/5 bg-background-light dark:bg-card-dark flex flex-col z-20">
+        <aside
+            className={`w-64 h-screen fixed right-0 top-0 border-l border-gray-200 dark:border-white/5 bg-background-light dark:bg-card-dark flex flex-col z-20 transition-transform duration-300 ${isOpen ? 'translate-x-0' : 'translate-x-full'}`}
+        >
             {/* Header */}
             <div className="h-16 flex items-center px-6 border-b border-gray-100 dark:border-white/5">
                 <span className="font-serif italic font-bold text-xl tracking-tight">Nulish</span>

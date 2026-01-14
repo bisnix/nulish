@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { Route, Switch, useLocation } from 'wouter';
-import { Plus, Search, Maximize2, X, Moon, Sun, ArrowLeft, MoreHorizontal } from 'lucide-react';
+import { Plus, Search, Maximize2, X, Moon, Sun, ArrowLeft, MoreHorizontal, PanelRight } from 'lucide-react';
 import { Editor } from './components/Editor';
 import { db, type Note } from './lib/db';
 import { format } from 'date-fns';
@@ -251,6 +251,21 @@ function FullPageEditor({ params }: { params: { id: string } }) {
 function AppLayout() {
   const [isDark, setIsDark] = useState(false);
   const [activeNote, setActiveNote] = useState<Note | null>(null);
+
+  // Sidebar State
+  const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+
+  // Load sidebar state persistence
+  useEffect(() => {
+    const savedSidebar = localStorage.getItem('nulish_sidebar_open');
+    if (savedSidebar !== null) setIsSidebarOpen(savedSidebar === 'true');
+  }, []);
+
+  const toggleSidebar = () => {
+    const newState = !isSidebarOpen;
+    setIsSidebarOpen(newState);
+    localStorage.setItem('nulish_sidebar_open', String(newState));
+  };
   const [isNoteOpen, setIsNoteOpen] = useState(false);
   const [, setLocation] = useLocation();
 
@@ -305,17 +320,21 @@ function AppLayout() {
   };
 
   return (
-    <div className="flex min-h-screen">
-      <Sidebar />
+    <div className={`flex min-h-screen font-sans text-gray-900 dark:text-gray-100 selection:bg-primary/20 bg-background-light dark:bg-background-dark`}>
 
-      <main className="flex-1 ml-64 relative bg-background-light dark:bg-background-dark min-h-screen">
-        <header className="fixed top-0 left-64 right-0 h-16 flex items-center justify-between px-8 z-10 glass-panel border-b-0">
+      <Sidebar isOpen={isSidebarOpen} />
+
+      <main className={`flex-1 relative bg-background-light dark:bg-background-dark min-h-screen transition-all duration-300 ${isSidebarOpen ? 'mr-64' : 'mr-0'}`}>
+        <header className={`fixed top-0 left-0 right-0 h-16 flex items-center justify-between px-8 z-10 glass-panel border-b-0 transition-all duration-300 ${isSidebarOpen ? 'mr-64' : 'mr-0'}`}>
           <div className="text-sm font-medium text-gray-500 dark:text-gray-400">
             {format(new Date(), 'EEEE, d MMMM yyyy')}
           </div>
           <div className="flex items-center space-x-4">
             <button onClick={toggleDark} className="p-2 hover:bg-black/5 dark:hover:bg-white/10 rounded-full">
               {isDark ? <Sun size={20} /> : <Moon size={20} />}
+            </button>
+            <button onClick={toggleSidebar} className="p-2 hover:bg-black/5 dark:hover:bg-white/10 rounded-full">
+              <PanelRight size={20} className={isSidebarOpen ? 'text-primary' : 'text-gray-500'} />
             </button>
           </div>
         </header>
