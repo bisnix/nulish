@@ -18,6 +18,9 @@ export interface Tag {
 
 // Local-first with Cloudflare D1 background sync
 class LocalDB {
+    private isSyncingNotes = false;
+    private isSyncingTags = false;
+
     private get<T>(key: string): T[] {
         const data = localStorage.getItem(`nulish_${key}`);
         return data ? JSON.parse(data) : [];
@@ -27,7 +30,6 @@ class LocalDB {
         localStorage.setItem(`nulish_${key}`, JSON.stringify(data));
     }
 
-    // Helper to push a single note to cloud
     private async pushNoteToCloud(note: Note) {
         try {
             await fetch('/api/notes', {
@@ -40,7 +42,6 @@ class LocalDB {
         }
     }
 
-    // Helper to push all tags to cloud
     private async pushTagsToCloud(tags: Tag[]) {
         try {
             await fetch('/api/tags', {
@@ -56,29 +57,34 @@ class LocalDB {
     async getNotes(): Promise<Note[]> {
         const localNotes = this.get<Note>('notes');
 
-        // Background sync from cloud
-        Promise.resolve().then(async () => {
-            try {
-                const res = await fetch('/api/notes');
-                if (res.ok) {
-                    const cloudNotes = await res.json();
+        // Background sync from cloud - only if not already syncing
+        if (!this.isSyncingNotes) {
+            this.isSyncingNotes = true;
+            Promise.resolve().then(async () => {
+                try {
+                    const res = await fetch('/api/notes');
+                    if (res.ok) {
+                        const cloudNotes = await res.json();
 
-                    // If cloud is empty but local has data, sync local to cloud
-                    if (cloudNotes.length === 0 && localNotes.length > 0) {
-                        for (const note of localNotes) {
-                            await this.pushNoteToCloud(note);
+                        // If cloud is empty but local has data, sync local to cloud
+                        if (cloudNotes.length === 0 && localNotes.length > 0) {
+                            for (const note of localNotes) {
+                                await this.pushNoteToCloud(note);
+                            }
+                        }
+                        // Otherwise, update local if cloud has data and is different
+                        else if (cloudNotes.length > 0 && JSON.stringify(cloudNotes) !== JSON.stringify(localNotes)) {
+                            this.set('notes', cloudNotes);
+                            window.dispatchEvent(new Event('nulish-notes-updated'));
                         }
                     }
-                    // Otherwise, cloud is the source of truth if it has data
-                    else if (cloudNotes.length > 0) {
-                        this.set('notes', cloudNotes);
-                        window.dispatchEvent(new Event('nulish-notes-updated'));
-                    }
+                } catch (err) {
+                    console.error('Notes background sync failed:', err);
+                } finally {
+                    this.isSyncingNotes = false;
                 }
-            } catch (err) {
-                console.error('Notes background sync failed:', err);
-            }
-        });
+            });
+        }
 
         if (localNotes.length === 0) {
             const { initialNotes } = await import('./initialData');
@@ -126,13 +132,9 @@ class LocalDB {
             notes.unshift(savedNote);
         }
 
-        // Apply locally first
         this.set('notes', notes);
-
-        // Push to cloud
         this.pushNoteToCloud(savedNote);
 
-        // Auto-extract tags
         if (savedNote.content) {
             await this.extractTagsFromContent(savedNote.content);
         }
@@ -144,7 +146,6 @@ class LocalDB {
         const notes = (await this.getNotes()).filter(n => n.id !== id);
         this.set('notes', notes);
 
-        // Push delete to cloud
         try {
             await fetch(`/api/notes?id=${id}`, { method: 'DELETE' });
         } catch (err) {
@@ -203,7 +204,10 @@ class LocalDB {
             }
         });
 
-        if (JSON.stringify(newTags.map(t => t.name).sort()) !== JSON.stringify(tags.map(t => t.name).sort())) {
+        const currentTagNames = JSON.stringify(newTags.map(t => t.name).sort());
+        const localTagNames = JSON.stringify(tags.map(t => t.name).sort());
+
+        if (currentTagNames !== localTagNames) {
             this.set('tags', newTags);
             this.pushTagsToCloud(newTags);
             window.dispatchEvent(new Event('nulish-tags-updated'));
@@ -213,23 +217,27 @@ class LocalDB {
     async getTags(): Promise<Tag[]> {
         const localTags = this.get<Tag>('tags');
 
-        // Background sync
-        Promise.resolve().then(async () => {
-            try {
-                const res = await fetch('/api/tags');
-                if (res.ok) {
-                    const cloudTags = await res.json();
-                    if (cloudTags.length > 0) {
-                        this.set('tags', cloudTags);
-                        window.dispatchEvent(new Event('nulish-tags-updated'));
-                    } else if (localTags.length > 0) {
-                        this.pushTagsToCloud(localTags);
+        if (!this.isSyncingTags) {
+            this.isSyncingTags = true;
+            Promise.resolve().then(async () => {
+                try {
+                    const res = await fetch('/api/tags');
+                    if (res.ok) {
+                        const cloudTags = await res.json();
+                        if (cloudTags.length > 0 && JSON.stringify(cloudTags) !== JSON.stringify(localTags)) {
+                            this.set('tags', cloudTags);
+                            window.dispatchEvent(new Event('nulish-tags-updated'));
+                        } else if (cloudTags.length === 0 && localTags.length > 0) {
+                            this.pushTagsToCloud(localTags);
+                        }
                     }
+                } catch (err) {
+                    console.error('Tags background sync failed:', err);
+                } finally {
+                    this.isSyncingTags = false;
                 }
-            } catch (err) {
-                console.error('Tags background sync failed:', err);
-            }
-        });
+            });
+        }
 
         if (localTags.length === 0) {
             const { initialTags } = await import('./initialData');
