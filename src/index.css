@@ -163,3 +163,59 @@ body {
   align-items: center !important;
   gap: 4px !important;
 }
+
+/* FIX: Link Dialog Buttons Invisible (White on White) */
+button._primaryButton_1e2ox_507,
+.nulish-editor button[type="submit"],
+.nulish-editor .mdxeditor-popup-container button[type="submit"] {
+  background-color: #000 !important;
+  color: #fff !important;
+  border: 1px solid #000 !important;
+}
+
+.dark button._primaryButton_1e2ox_507,
+.dark .nulish-editor button[type="submit"],
+.dark .nulish-editor .mdxeditor-popup-container button[type="submit"] {
+  background-color: #fff !important;
+  color: #000 !important;
+  border: 1px solid #fff !important;
+}
+
+button._secondaryButton_1e2ox_508,
+.nulish-editor button[type="button"]:not([role="tab"]),
+.nulish-editor .mdxeditor-popup-container button[type="button"] {
+  background-color: transparent !important;
+  color: inherit !important;
+  border: 1px solid #e5e7eb !important;
+}
+
+/* FIX: Checkbox Alignment - Verified Fix */
+._listItemChecked_1tncs_73,
+._listItemUnchecked_1tncs_74,
+li.mdxeditor-list-item[role="checkbox"] {
+  padding-left: 2.22rem !important;
+  /* Adjusted for alignment */
+  margin-left: 0 !important;
+  margin-inline-start: 0 !important;
+  position: relative !important;
+  display: flex !important;
+  /* Ensure flex behavior */
+  align-items: flex-start !important;
+}
+
+._listItemUnchecked_1tncs_74::before,
+._listItemChecked_1tncs_73::before,
+li.mdxeditor-list-item[role="checkbox"]::before {
+  left: 0.5rem !important;
+  top: 0.25rem !important;
+  position: absolute !important;
+  transform: none !important;
+  /* Reset any partial transforms */
+}
+
+/* Ensure global list styles don't break it */
+.nulish-editor ul.mdxeditor-checkbox-list li {
+  display: list-item !important;
+  /* Reset to allow ::before positioning relative to LI */
+  list-style: none !important;
+}

@@ -19,9 +19,9 @@ import {
     InsertImage,
     InsertTable,
     ListsToggle,
-    CodeToggle,
     InsertCodeBlock,
     InsertThematicBreak,
+    codeMirrorPlugin,
     type MDXEditorMethods
 } from '@mdxeditor/editor';
 
@@ -102,7 +102,6 @@ export const Editor: React.FC<EditorProps> = ({ markdown, onChange, editorRef, c
                                 <>
                                     <UndoRedo />
                                     <BoldItalicUnderlineToggles />
-                                    <CodeToggle />
                                     <BlockTypeSelect />
                                     <ListsToggle />
                                     <CreateLink />
@@ -123,7 +122,8 @@ export const Editor: React.FC<EditorProps> = ({ markdown, onChange, editorRef, c
                     imagePlugin(),
                     tablePlugin(),
                     thematicBreakPlugin(),
-                    codeBlockPlugin({ defaultCodeBlockLanguage: 'js' })
+                    codeBlockPlugin({ defaultCodeBlockLanguage: 'js' }),
+                    codeMirrorPlugin({ codeBlockLanguages: { js: 'JavaScript', css: 'CSS', txt: 'Plain Text', ts: 'TypeScript', html: 'HTML' } })
                 ]}
             />
         </div>
