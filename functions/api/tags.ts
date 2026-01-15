@@ -22,21 +22,24 @@ export const onRequest: PagesFunction<Env> = async (context) => {
         }
     }
 
-    // --- POST /api/tags (Create/Update tags batch) ---
+    // --- POST /api/tags (Sync all tags - Replace mode) ---
     if (request.method === 'POST') {
         try {
             const tags: any[] = await request.json();
 
-            // Batch update tags
-            const statements = tags.map(tag =>
-                env.DB.prepare(`
-          INSERT INTO tags (id, name, parent_id, created_at)
-          VALUES (?, ?, ?, ?)
-          ON CONFLICT(id) DO UPDATE SET
-            name = excluded.name,
-            parent_id = excluded.parent_id
-        `).bind(tag.id, tag.name, tag.parent_id, tag.created_at || Date.now())
-            );
+            // Use a batch to ensure atomicity (DELETE + INSERTs)
+            const statements = [
+                env.DB.prepare("DELETE FROM tags")
+            ];
+
+            tags.forEach(tag => {
+                statements.push(
+                    env.DB.prepare(`
+                        INSERT INTO tags (id, name, parent_id, created_at)
+                        VALUES (?, ?, ?, ?)
+                    `).bind(tag.id, tag.name, tag.parent_id, tag.created_at || Date.now())
+                );
+            });
 
             await env.DB.batch(statements);
 
