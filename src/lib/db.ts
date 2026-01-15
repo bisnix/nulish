@@ -16,8 +16,7 @@ export interface Tag {
     created_at: number;
 }
 
-// Simple in-memory / local storage implementation for rapid UI dev
-// Later replaced by fetch('/api/...') calls to Cloudflare D1
+// Local-first with Cloudflare D1 background sync
 class LocalDB {
     private get<T>(key: string): T[] {
         const data = localStorage.getItem(`nulish_${key}`);
@@ -28,14 +27,65 @@ class LocalDB {
         localStorage.setItem(`nulish_${key}`, JSON.stringify(data));
     }
 
+    // Helper to push a single note to cloud
+    private async pushNoteToCloud(note: Note) {
+        try {
+            await fetch('/api/notes', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(note)
+            });
+        } catch (err) {
+            console.error('Failed to sync note to cloud:', err);
+        }
+    }
+
+    // Helper to push all tags to cloud
+    private async pushTagsToCloud(tags: Tag[]) {
+        try {
+            await fetch('/api/tags', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(tags)
+            });
+        } catch (err) {
+            console.error('Failed to sync tags to cloud:', err);
+        }
+    }
+
     async getNotes(): Promise<Note[]> {
-        const notes = this.get<Note>('notes');
-        if (notes.length === 0) {
+        const localNotes = this.get<Note>('notes');
+
+        // Background sync from cloud
+        Promise.resolve().then(async () => {
+            try {
+                const res = await fetch('/api/notes');
+                if (res.ok) {
+                    const cloudNotes = await res.json();
+
+                    // If cloud is empty but local has data, sync local to cloud
+                    if (cloudNotes.length === 0 && localNotes.length > 0) {
+                        for (const note of localNotes) {
+                            await this.pushNoteToCloud(note);
+                        }
+                    }
+                    // Otherwise, cloud is the source of truth if it has data
+                    else if (cloudNotes.length > 0) {
+                        this.set('notes', cloudNotes);
+                        window.dispatchEvent(new Event('nulish-notes-updated'));
+                    }
+                }
+            } catch (err) {
+                console.error('Notes background sync failed:', err);
+            }
+        });
+
+        if (localNotes.length === 0) {
             const { initialNotes } = await import('./initialData');
             this.set('notes', initialNotes);
             return initialNotes;
         }
-        return notes.sort((a, b) => b.updated_at - a.updated_at);
+        return localNotes.sort((a, b) => b.updated_at - a.updated_at);
     }
 
     async getNote(id: string): Promise<Note | undefined> {
@@ -51,10 +101,8 @@ class LocalDB {
         if (note.id) {
             const index = notes.findIndex(n => n.id === note.id);
             if (index >= 0) {
-                const updated = { ...notes[index], ...note, updated_at: now } as Note;
-                notes[index] = updated;
-                this.set('notes', notes);
-                savedNote = updated;
+                savedNote = { ...notes[index], ...note, updated_at: now } as Note;
+                notes[index] = savedNote;
             } else {
                 savedNote = {
                     id: uuidv4(),
@@ -65,10 +113,9 @@ class LocalDB {
                     is_pinned: note.is_pinned || false
                 };
                 notes.unshift(savedNote);
-                this.set('notes', notes);
             }
         } else {
-            const newNote: Note = {
+            savedNote = {
                 id: uuidv4(),
                 title: note.title || 'Untitled',
                 content: note.content || '',
@@ -76,11 +123,14 @@ class LocalDB {
                 updated_at: now,
                 is_pinned: note.is_pinned || false
             };
-
-            notes.unshift(newNote);
-            this.set('notes', notes);
-            savedNote = newNote;
+            notes.unshift(savedNote);
         }
+
+        // Apply locally first
+        this.set('notes', notes);
+
+        // Push to cloud
+        this.pushNoteToCloud(savedNote);
 
         // Auto-extract tags
         if (savedNote.content) {
@@ -93,57 +143,26 @@ class LocalDB {
     async deleteNote(id: string): Promise<void> {
         const notes = (await this.getNotes()).filter(n => n.id !== id);
         this.set('notes', notes);
+
+        // Push delete to cloud
+        try {
+            await fetch(`/api/notes?id=${id}`, { method: 'DELETE' });
+        } catch (err) {
+            console.error('Failed to delete note from cloud:', err);
+        }
     }
 
     private async extractTagsFromContent(_content: string) {
-        // We will simply call cleanupUnusedTags which regenerates the entire tag tree from all notes.
-        // This handles addition of new tags AND removal of stale ones in one go.
-        // It is the source of truth based on current content.
         await this.cleanupUnusedTags();
     }
 
-    // Remove tags that are no longer found in any note
-    // This cleans up partial tags like 'w', 'wo' created during typing
     async cleanupUnusedTags() {
         const notes = await this.getNotes();
         const tags = await this.getTags();
-        // const usedTagNames = new Set<string>();
-
         const regex = /#(\w+(?:\/\w+)*)/g;
-
-        notes.forEach(note => {
-            const matches = note.content.match(regex);
-            if (matches) {
-                matches.forEach(m => {
-                    const fullPath = m.substring(1);
-                    const parts = fullPath.split('/');
-                    // For nested tags, we must consider all parent paths as "used"
-                    // let pathAcc = '';
-                    parts.forEach(_part => {
-                        // Note: Our DB stores 'name' as just the segment, and 'parent_id'.
-                        // To properly identify 'used' tags we'd need to reconstruct tree.
-                        // Simpler approach for this MVP:
-                        // Just keep tags if they are *part of* a valid active tag structure?
-                        // Actually, simpler:
-                        // We generated tags based on splitting matches.
-                        // We can just re-generate the entire desired tag tree from scratch based on current notes
-                        // And replace the tags table (preserving IDs where possible if needed, or just wiping).
-                        // Since IDs are UUIDs and not referenced except by parent_id,
-                        // And we don't have metadata on tags yet...
-                        // Re-building might be cleaner.
-                        // BUT, to avoid ID churn if we add features later, let's try to match.
-                    });
-                });
-            }
-        });
-
-        // Re-generative approach is safest for "Zero Config" to clear junk.
-        // We will Re-Extract EVERYTHING from ALL notes and Replace 'tags'.
-        // This is expensive but fine for local text app.
 
         let newTags: Tag[] = [];
 
-        // Helper
         const getOrAddTag = (name: string, parentId: string | null) => {
             let existing = newTags.find(t => t.name === name && t.parent_id === parentId);
             if (!existing) {
@@ -159,7 +178,6 @@ class LocalDB {
         };
 
         notes.forEach(note => {
-            // Process content hashtags
             const matches = note.content.match(regex);
             if (matches) {
                 matches.forEach(m => {
@@ -172,11 +190,8 @@ class LocalDB {
                 });
             }
 
-            // Process metadata tags (from UI input)
             if (note.tags && note.tags.length > 0) {
                 note.tags.forEach(t => {
-                    // Handle potential nested tags in metadata if user typed "parent/child"
-                    // Also handle if user typed "#tag" in input (strip #)
                     const cleanTag = t.startsWith('#') ? t.substring(1) : t;
                     const parts = cleanTag.split('/');
                     let parentId: string | null = null;
@@ -188,21 +203,40 @@ class LocalDB {
             }
         });
 
-        // Check if different
         if (JSON.stringify(newTags.map(t => t.name).sort()) !== JSON.stringify(tags.map(t => t.name).sort())) {
             this.set('tags', newTags);
+            this.pushTagsToCloud(newTags);
             window.dispatchEvent(new Event('nulish-tags-updated'));
         }
     }
 
     async getTags(): Promise<Tag[]> {
-        const tags = this.get<Tag>('tags');
-        if (tags.length === 0) {
+        const localTags = this.get<Tag>('tags');
+
+        // Background sync
+        Promise.resolve().then(async () => {
+            try {
+                const res = await fetch('/api/tags');
+                if (res.ok) {
+                    const cloudTags = await res.json();
+                    if (cloudTags.length > 0) {
+                        this.set('tags', cloudTags);
+                        window.dispatchEvent(new Event('nulish-tags-updated'));
+                    } else if (localTags.length > 0) {
+                        this.pushTagsToCloud(localTags);
+                    }
+                }
+            } catch (err) {
+                console.error('Tags background sync failed:', err);
+            }
+        });
+
+        if (localTags.length === 0) {
             const { initialTags } = await import('./initialData');
             this.set('tags', initialTags);
             return initialTags;
         }
-        return tags;
+        return localTags;
     }
 }
 
