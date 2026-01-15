@@ -95,7 +95,7 @@ class LocalDB {
         this.set('notes', notes);
     }
 
-    private async extractTagsFromContent(content: string) {
+    private async extractTagsFromContent(_content: string) {
         // We will simply call cleanupUnusedTags which regenerates the entire tag tree from all notes.
         // This handles addition of new tags AND removal of stale ones in one go.
         // It is the source of truth based on current content.
@@ -107,7 +107,7 @@ class LocalDB {
     async cleanupUnusedTags() {
         const notes = await this.getNotes();
         const tags = await this.getTags();
-        const usedTagNames = new Set<string>();
+        // const usedTagNames = new Set<string>();
 
         const regex = /#(\w+(?:\/\w+)*)/g;
 
@@ -118,8 +118,8 @@ class LocalDB {
                     const fullPath = m.substring(1);
                     const parts = fullPath.split('/');
                     // For nested tags, we must consider all parent paths as "used"
-                    let pathAcc = '';
-                    parts.forEach(part => {
+                    // let pathAcc = '';
+                    parts.forEach(_part => {
                         // Note: Our DB stores 'name' as just the segment, and 'parent_id'.
                         // To properly identify 'used' tags we'd need to reconstruct tree.
                         // Simpler approach for this MVP:

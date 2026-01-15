@@ -27,6 +27,7 @@ Aplikasi ini didesain untuk **Fokus**.
 
 Selamat menulis!`,
         updated_at: Date.now(),
+        tags: [],
         is_pinned: true
     },
     {
@@ -37,6 +38,7 @@ Selamat menulis!`,
 - [ ] Integrasi AI
 - [ ] Deploy ke Cloudflare`,
         updated_at: Date.now() - 1000 * 60 * 60, // 1 hour ago
+        tags: [],
         is_pinned: false
     }
 ];
