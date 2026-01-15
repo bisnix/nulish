@@ -136,7 +136,7 @@ class LocalDB {
         this.pushNoteToCloud(savedNote);
 
         if (savedNote.content) {
-            await this.extractTagsFromContent(savedNote.content);
+            await this.extractTagsFromContent();
         }
 
         return savedNote;
@@ -148,18 +148,19 @@ class LocalDB {
 
         try {
             await fetch(`/api/notes?id=${id}`, { method: 'DELETE' });
+            await this.extractTagsFromContent();
         } catch (err) {
             console.error('Failed to delete note from cloud:', err);
         }
     }
 
-    private async extractTagsFromContent(_content: string) {
+    private async extractTagsFromContent() {
         await this.cleanupUnusedTags();
     }
 
     async cleanupUnusedTags() {
         const notes = await this.getNotes();
-        const tags = await this.getTags();
+        const currentTags = await this.getTags();
         const regex = /#(\w+(?:\/\w+)*)/g;
 
         let newTags: Tag[] = [];
@@ -204,10 +205,11 @@ class LocalDB {
             }
         });
 
-        const currentTagNames = JSON.stringify(newTags.map(t => t.name).sort());
-        const localTagNames = JSON.stringify(tags.map(t => t.name).sort());
+        // Always sync if there is any difference in length or content
+        const newTagNames = JSON.stringify(newTags.map(t => t.name).sort());
+        const currentTagNames = JSON.stringify(currentTags.map(t => t.name).sort());
 
-        if (currentTagNames !== localTagNames) {
+        if (newTagNames !== currentTagNames || newTags.length !== currentTags.length) {
             this.set('tags', newTags);
             this.pushTagsToCloud(newTags);
             window.dispatchEvent(new Event('nulish-tags-updated'));
