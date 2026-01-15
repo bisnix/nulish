@@ -159,24 +159,27 @@ class LocalDB {
     }
 
     async cleanupUnusedTags() {
+        console.log('Running cleanupUnusedTags...');
         const notes = await this.getNotes();
-        const currentTags = await this.getTags();
+        // const tags = await this.getTags(); // We don't even need current tags if we just overwrite
         const regex = /#(\w+(?:\/\w+)*)/g;
 
         let newTags: Tag[] = [];
+        const seenTags = new Set<string>();
 
         const getOrAddTag = (name: string, parentId: string | null) => {
-            let existing = newTags.find(t => t.name === name && t.parent_id === parentId);
-            if (!existing) {
-                existing = {
-                    id: uuidv4(),
-                    name,
-                    parent_id: parentId,
-                    created_at: Date.now()
-                };
-                newTags.push(existing);
-            }
-            return existing;
+            const compositeKey = `${name}:${parentId}`;
+            if (seenTags.has(compositeKey)) return newTags.find(t => t.name === name && t.parent_id === parentId)!;
+
+            seenTags.add(compositeKey);
+            const tag: Tag = {
+                id: uuidv4(),
+                name,
+                parent_id: parentId,
+                created_at: Date.now()
+            };
+            newTags.push(tag);
+            return tag;
         };
 
         notes.forEach(note => {
@@ -205,15 +208,13 @@ class LocalDB {
             }
         });
 
-        // Always sync if there is any difference in length or content
-        const newTagNames = JSON.stringify(newTags.map(t => t.name).sort());
-        const currentTagNames = JSON.stringify(currentTags.map(t => t.name).sort());
+        // FORCE UPDATE: We trust this extraction is the source of truth from notes.
+        // We update local storage AND push to cloud immediately.
+        console.log('Forcing tag sync. New tag count:', newTags.length);
 
-        if (newTagNames !== currentTagNames || newTags.length !== currentTags.length) {
-            this.set('tags', newTags);
-            this.pushTagsToCloud(newTags);
-            window.dispatchEvent(new Event('nulish-tags-updated'));
-        }
+        this.set('tags', newTags);
+        this.pushTagsToCloud(newTags);
+        window.dispatchEvent(new Event('nulish-tags-updated'));
     }
 
     async getTags(): Promise<Tag[]> {
