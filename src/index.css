@@ -207,7 +207,7 @@ li.mdxeditor-list-item[role="checkbox"] {
 ._listItemChecked_1tncs_73::before,
 li.mdxeditor-list-item[role="checkbox"]::before {
   left: 0.5rem !important;
-  top: 0.25rem !important;
+  top: 0.375rem !important;
   position: absolute !important;
   transform: none !important;
   /* Reset any partial transforms */
