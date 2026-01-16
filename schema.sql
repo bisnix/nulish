@@ -14,8 +14,11 @@ CREATE TABLE notes (
   id TEXT PRIMARY KEY,
   title TEXT,
   content TEXT,
+  tags TEXT,
   updated_at INTEGER,
-  is_pinned BOOLEAN DEFAULT 0
+  created_at INTEGER,
+  is_pinned BOOLEAN DEFAULT 0,
+  is_published BOOLEAN DEFAULT 0
 );
 
 CREATE TABLE note_tags (

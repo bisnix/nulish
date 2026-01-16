@@ -6,7 +6,9 @@ export interface Note {
     content: string;
     tags: string[];
     updated_at: number;
+    created_at: number;
     is_pinned: boolean;
+    is_published?: boolean;
 }
 
 export interface Tag {
@@ -53,6 +55,19 @@ class CloudDB {
         return notes.find(n => n.id === id);
     }
 
+    // --- NEW: Public Fetch ---
+    async getPublicNote(id: string): Promise<Note | null> {
+        try {
+            const res = await fetch(`/api/public/notes?id=${id}`);
+            if (res.status === 404) return null;
+            if (!res.ok) throw new Error('Failed to fetch public note');
+            return await res.json();
+        } catch (err) {
+            console.error('Failed to get public note:', err);
+            return null;
+        }
+    }
+
     async saveNote(note: Partial<Note> & { id?: string }): Promise<Note> {
         const now = Date.now();
 
@@ -62,7 +77,9 @@ class CloudDB {
             content: note.content || '',
             tags: note.tags || [],
             updated_at: now,
-            is_pinned: note.is_pinned || false
+            created_at: note.created_at || now,
+            is_pinned: note.is_pinned || false,
+            is_published: note.is_published || false
         };
 
         try {

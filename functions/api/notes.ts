@@ -15,11 +15,12 @@ export const onRequest: PagesFunction<Env> = async (context) => {
                 "SELECT * FROM notes ORDER BY updated_at DESC"
             ).all();
 
-            // Parse tags JSON string back to array and handle is_pinned boolean
+            // Parse tags JSON string back to array and handle is_pinned/is_published boolean
             const notes = results.map((n: any) => ({
                 ...n,
                 tags: JSON.parse(n.tags || '[]'),
-                is_pinned: Boolean(n.is_pinned)
+                is_pinned: Boolean(n.is_pinned),
+                is_published: Boolean(n.is_published)
             }));
 
             return new Response(JSON.stringify(notes), {
@@ -37,14 +38,15 @@ export const onRequest: PagesFunction<Env> = async (context) => {
             const now = Date.now();
 
             await env.DB.prepare(`
-        INSERT INTO notes (id, title, content, tags, updated_at, created_at, is_pinned)
-        VALUES (?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO notes (id, title, content, tags, updated_at, created_at, is_pinned, is_published)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(id) DO UPDATE SET
           title = excluded.title,
           content = excluded.content,
           tags = excluded.tags,
           updated_at = excluded.updated_at,
-          is_pinned = excluded.is_pinned
+          is_pinned = excluded.is_pinned,
+          is_published = excluded.is_published
       `).bind(
                 note.id,
                 note.title || '',
@@ -52,7 +54,8 @@ export const onRequest: PagesFunction<Env> = async (context) => {
                 JSON.stringify(note.tags || []),
                 now,
                 note.created_at || now,
-                note.is_pinned ? 1 : 0
+                note.is_pinned ? 1 : 0,
+                note.is_published ? 1 : 0
             ).run();
 
             return new Response(JSON.stringify({ success: true, updated_at: now }), {

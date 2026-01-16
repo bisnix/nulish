@@ -234,6 +234,56 @@ function FullPageEditor({ params }: { params: { id: string } }) {
 
                       <div className="h-px bg-gray-100 dark:bg-white/5" />
 
+                      <div>
+                        <div className="flex items-center justify-between mb-2">
+                          <div className="text-xs font-medium text-gray-400 uppercase tracking-wider">Publish</div>
+                          {note.is_published && (
+                            <span className="text-[10px] bg-green-100 text-green-700 px-1.5 py-0.5 rounded-full font-medium">LIVE</span>
+                          )}
+                        </div>
+
+                        <button
+                          onClick={() => {
+                            const newStatus = !note.is_published;
+                            setNote({ ...note, is_published: newStatus });
+                            saveNote(note.title, note.content, note.tags);
+                            // Explicit save with updated publish status is handled by setNote->saveNote logic? 
+                            // Wait, saveNote uses args. We need to pass the updated note object or ensure saveNote handles generic updates.
+                            // Actually saveNote signature is (title, content, tags). It doesn't take is_published.
+                            // Let's create a specific update function or modify saveNote in FullPageEditor to be more generic?
+                            // QUICK FIX: Update saveNote to support partial updates or just call db.saveNote directly here.
+                            db.saveNote({ ...note, is_published: newStatus }).then(updated => setNote(updated));
+                          }}
+                          className={`w-full py-2 px-3 rounded-md text-xs font-medium transition-all mb-2 flex items-center justify-center space-x-2 ${note.is_published
+                            ? 'bg-red-50 text-red-600 hover:bg-red-100 dark:bg-red-900/20 dark:text-red-400'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-white/10 dark:text-gray-200'
+                            }`}
+                        >
+                          <span>{note.is_published ? 'Unpublish Note' : 'Publish to Web'}</span>
+                        </button>
+
+                        {note.is_published && (
+                          <button
+                            onClick={() => {
+                              const url = `${window.location.origin}/${note.id}`;
+                              navigator.clipboard.writeText(url);
+                              // Could show toast here
+                              const btn = document.getElementById('copy-btn-text');
+                              if (btn) {
+                                const original = btn.textContent;
+                                btn.textContent = 'Copied!';
+                                setTimeout(() => btn.textContent = original, 2000);
+                              }
+                            }}
+                            className="w-full py-2 px-3 rounded-md border border-gray-200 dark:border-white/10 text-xs font-medium text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-white/5 flex items-center justify-center space-x-2"
+                          >
+                            <span id="copy-btn-text">Copy Public Link</span>
+                          </button>
+                        )}
+                      </div>
+
+                      <div className="h-px bg-gray-100 dark:bg-white/5" />
+
                       <button
                         onClick={() => {
                           setShowSettings(false);
@@ -410,7 +460,7 @@ function AppLayout() {
       id = saved.id;
     }
     closeNote();
-    setLocation(`/note/${id}`);
+    setLocation(`/n/${id}`);
   };
 
   return (
@@ -523,11 +573,65 @@ function AppLayout() {
   );
 }
 
+function PublicNoteView({ params }: { params: { id: string } }) {
+  const [note, setNote] = useState<Note | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [, setLocation] = useLocation();
+
+  useEffect(() => {
+    // Check if dark mode is preferred
+    if (document.documentElement.classList.contains('dark') ||
+      (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      document.documentElement.classList.add('dark');
+    }
+
+    db.getPublicNote(params.id).then(n => {
+      if (n) {
+        setNote(n);
+      } else {
+        setError('Note not found or not published');
+      }
+      setLoading(false);
+    });
+  }, [params.id]);
+
+  if (loading) return <div className="min-h-screen flex items-center justify-center dark:bg-background-dark dark:text-gray-100">Loading...</div>;
+  if (error || !note) return (
+    <div className="min-h-screen flex flex-col items-center justify-center dark:bg-background-dark dark:text-gray-100 space-y-4">
+      <div className="text-xl font-medium">{error || '404 Not Found'}</div>
+      <button onClick={() => setLocation('/')} className="text-primary hover:underline">Go Home</button>
+    </div>
+  );
+
+  return (
+    <div className="min-h-screen bg-white dark:bg-background-dark font-sans text-gray-900 dark:text-gray-100 flex justify-center py-20 px-8">
+      <div className="w-full max-w-3xl">
+        <h1 className="text-4xl font-bold mb-8 font-serif leading-tight">{note.title || 'Untitled'}</h1>
+        <div className="flex items-center space-x-2 mb-8 overflow-x-auto no-scrollbar">
+          {note.tags.map(tag => (
+            <span key={tag} className="px-2 py-1 bg-gray-100 dark:bg-white/10 rounded-md text-xs font-medium text-gray-600 dark:text-gray-300">#{tag}</span>
+          ))}
+          <span className="text-xs text-gray-400 pl-2">{format(note.updated_at, 'MMM d, yyyy')}</span>
+        </div>
+        <Editor
+          markdown={note.content}
+          readOnly={true}
+          showToolbar={false}
+          className="text-editor-lg"
+        />
+      </div>
+    </div>
+  );
+}
+
 function App() {
   return (
     <Switch>
       <Route path="/" component={AppLayout} />
+      <Route path="/n/:id" component={FullPageEditor} />
       <Route path="/note/:id" component={FullPageEditor} />
+      <Route path="/:id" component={PublicNoteView} />
     </Switch>
   );
 }

@@ -27,17 +27,19 @@ import {
 
 interface EditorProps {
     markdown: string;
-    onChange: (markdown: string) => void;
+    onChange?: (markdown: string) => void;
     editorRef?: React.MutableRefObject<MDXEditorMethods | null>;
     className?: string;
     showToolbar?: boolean; // Optional: default true
+    readOnly?: boolean;
 }
 
-export const Editor: React.FC<EditorProps> = ({ markdown, onChange, editorRef, className, showToolbar = true }) => {
+export const Editor: React.FC<EditorProps> = ({ markdown, onChange, editorRef, className, showToolbar = true, readOnly = false }) => {
     const isDark = document.documentElement.classList.contains('dark');
 
     // Hack: Shorten Block Type Labels in Toolbar (e.g. "Paragraph" -> "P")
     React.useEffect(() => {
+        if (readOnly) return; // Skip toolbar hacks if readOnly
         const shortenLabels = () => {
             const btn = document.querySelector('.mdxeditor-toolbar button[aria-label="Block type"]');
             if (btn) {
@@ -85,18 +87,19 @@ export const Editor: React.FC<EditorProps> = ({ markdown, onChange, editorRef, c
         setTimeout(shortenLabels, 0); // Run immediately
 
         return () => clearInterval(interval);
-    }, []);
+    }, [readOnly]);
 
     return (
-        <div className="nulish-editor w-full h-full">
+        <div className={`nulish-editor w-full h-full ${readOnly ? 'read-only' : ''}`}>
             <MDXEditor
                 ref={editorRef}
                 markdown={markdown}
                 onChange={onChange}
+                readOnly={readOnly}
                 className={isDark ? 'dark-theme' : ''}
                 contentEditableClassName={`prose dark:prose-invert max-w-none focus:outline-none min-h-[50vh] py-4 prose-headings:font-serif prose-headings:font-normal ${className || ''}`}
                 plugins={[
-                    ...(showToolbar ? [
+                    ...(showToolbar && !readOnly ? [
                         toolbarPlugin({
                             toolbarContents: () => (
                                 <>
