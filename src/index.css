@@ -219,3 +219,8 @@ li.mdxeditor-list-item[role="checkbox"]::before {
   /* Reset to allow ::before positioning relative to LI */
   list-style: none !important;
 }
+
+/* Hide toolbar when toggled off */
+.nulish-editor.hide-toolbar .mdxeditor-toolbar {
+  display: none !important;
+}

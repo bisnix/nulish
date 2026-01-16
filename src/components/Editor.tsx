@@ -90,7 +90,7 @@ export const Editor: React.FC<EditorProps> = ({ markdown, onChange, editorRef, c
     }, [readOnly]);
 
     return (
-        <div className={`nulish-editor w-full h-full ${readOnly ? 'read-only' : ''}`}>
+        <div className={`nulish-editor w-full h-full ${readOnly ? 'read-only' : ''} ${!showToolbar ? 'hide-toolbar' : ''}`}>
             <MDXEditor
                 ref={editorRef}
                 markdown={markdown}
@@ -99,7 +99,7 @@ export const Editor: React.FC<EditorProps> = ({ markdown, onChange, editorRef, c
                 className={isDark ? 'dark-theme' : ''}
                 contentEditableClassName={`prose dark:prose-invert max-w-none focus:outline-none min-h-[50vh] py-4 prose-headings:font-serif prose-headings:font-normal ${className || ''}`}
                 plugins={[
-                    ...(showToolbar && !readOnly ? [
+                    ...(!readOnly ? [
                         toolbarPlugin({
                             toolbarContents: () => (
                                 <>
