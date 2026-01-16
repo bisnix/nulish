@@ -11,9 +11,19 @@ export const onRequest: PagesFunction<Env> = async (context) => {
     // --- GET /api/notes (List all notes) ---
     if (request.method === 'GET') {
         try {
-            const { results } = await env.DB.prepare(
-                "SELECT * FROM notes ORDER BY updated_at DESC"
-            ).all();
+            const searchQuery = url.searchParams.get('q');
+            let stmt;
+
+            if (searchQuery) {
+                const term = `%${searchQuery}%`;
+                stmt = env.DB.prepare(
+                    "SELECT * FROM notes WHERE title LIKE ? OR content LIKE ? OR tags LIKE ? ORDER BY updated_at DESC"
+                ).bind(term, term, term);
+            } else {
+                stmt = env.DB.prepare("SELECT * FROM notes ORDER BY updated_at DESC");
+            }
+
+            const { results } = await stmt.all();
 
             // Parse tags JSON string back to array and handle is_pinned/is_published boolean
             const notes = results.map((n: any) => ({

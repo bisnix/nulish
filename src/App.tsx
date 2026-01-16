@@ -15,19 +15,49 @@ import { ConfirmDialog } from './components/ConfirmDialog';
 
 function Home({ onOpenNote }: { onOpenNote: (note?: Note) => void }) {
   const [notes, setNotes] = useState<Note[]>([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const searchTimeoutRef = useRef<number | undefined>(undefined);
 
   useEffect(() => {
+    // Initial load
     db.getNotes().then(setNotes);
-    const interval = setInterval(() => db.getNotes().then(setNotes), 1000);
+
+    // Polling only if NOT searching (to avoid overwriting search results)
+    const interval = setInterval(() => {
+      if (!searchQuery) {
+        db.getNotes().then(setNotes);
+      }
+    }, 1000);
     return () => clearInterval(interval);
-  }, []);
+  }, [searchQuery]);
+
+  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setSearchQuery(val);
+
+    if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+
+    searchTimeoutRef.current = window.setTimeout(() => {
+      if (val.trim()) {
+        db.searchNotes(val).then(setNotes);
+      } else {
+        db.getNotes().then(setNotes);
+      }
+    }, 300);
+  };
 
   return (
     <div className="p-8 pt-24 max-w-4xl mx-auto">
       <div className="mb-12">
         <div className="flex items-center space-x-3 w-full bg-gray-100 dark:bg-white/5 pl-4 pr-1.5 py-1.5 rounded-xl text-sm text-gray-500 hover:bg-gray-200 dark:hover:bg-white/10 has-[button:hover]:bg-gray-100 dark:has-[button:hover]:bg-white/5 transition-colors focus-within:ring-2 ring-gray-200 dark:ring-white/10 group">
           <Search size={18} />
-          <input type="text" placeholder="Search notes..." className="bg-transparent border-none outline-none w-full placeholder:text-gray-400 py-2 h-full" />
+          <input
+            type="text"
+            placeholder="Search notes (title, content, #tags)..."
+            value={searchQuery}
+            onChange={handleSearch}
+            className="bg-transparent border-none outline-none w-full placeholder:text-gray-400 py-2 h-full"
+          />
           <button
             onClick={(e) => { e.stopPropagation(); onOpenNote(); }}
             className="w-10 h-10 flex-shrink-0 rounded-full bg-black dark:bg-white text-white dark:text-black flex items-center justify-center hover:scale-105 transition-transform shadow-sm"

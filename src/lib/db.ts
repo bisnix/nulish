@@ -136,6 +136,22 @@ class CloudDB {
             return [];
         }
     }
+    async searchNotes(query: string): Promise<Note[]> {
+        if (!query.trim()) return this.getNotes();
+
+        try {
+            const res = await fetch(`/api/notes?q=${encodeURIComponent(query)}`);
+            if (!res.ok) throw new Error('Failed to search notes');
+            const notes = await res.json();
+            // Don't cache search results globally to avoid messing up the main list cache??
+            // Actually, search results are just a view. We don't need to cache them in `notesCache` 
+            // unless we want to "cache" the search. For simplicity, no caching for now.
+            return notes;
+        } catch (err) {
+            console.error('Failed to search notes:', err);
+            return [];
+        }
+    }
 }
 
 export const db = new CloudDB();
