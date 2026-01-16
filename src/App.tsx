@@ -71,6 +71,7 @@ function FullPageEditor({ params }: { params: { id: string } }) {
 
   const [fontSize, setFontSize] = useState<'text-editor-sm' | 'text-editor-md' | 'text-editor-lg'>('text-editor-sm');
   const [frameStyle, setFrameStyle] = useState<'none' | 'vertical' | 'boxed'>('none');
+  const [showToolbar, setShowToolbar] = useState(true);
 
   useEffect(() => {
     // Load sidebar state
@@ -89,6 +90,8 @@ function FullPageEditor({ params }: { params: { id: string } }) {
     if (savedSize) setFontSize(savedSize as any);
     const savedFrame = localStorage.getItem('nulish_frame');
     if (savedFrame) setFrameStyle(savedFrame as any);
+    const savedToolbar = localStorage.getItem('nulish_show_toolbar');
+    if (savedToolbar !== null) setShowToolbar(savedToolbar === 'true');
 
     if (params.id) {
       db.getNote(params.id).then(n => {
@@ -121,6 +124,12 @@ function FullPageEditor({ params }: { params: { id: string } }) {
   const updateFrame = (style: string) => {
     setFrameStyle(style as any);
     localStorage.setItem('nulish_frame', style);
+  };
+
+  const toggleToolbar = () => {
+    const next = !showToolbar;
+    setShowToolbar(next);
+    localStorage.setItem('nulish_show_toolbar', String(next));
   };
 
   const saveNote = async (title: string, content: string, tags?: string[]) => {
@@ -235,6 +244,22 @@ function FullPageEditor({ params }: { params: { id: string } }) {
 
                       <div className="h-px bg-gray-100 dark:bg-white/5" />
 
+                      {/* Toolbar Toggle */}
+                      <div>
+                        <div className="text-xs font-medium text-gray-400 mb-2 uppercase tracking-wider">Interface</div>
+                        <button
+                          onClick={toggleToolbar}
+                          className={`w-full py-2 px-3 rounded-md text-xs font-medium transition-all flex items-center justify-center space-x-2 ${!showToolbar
+                            ? 'bg-primary/10 text-primary border border-primary/20'
+                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-white/10 dark:text-gray-200'
+                            }`}
+                        >
+                          <span>{showToolbar ? 'Hide Toolbar' : 'Show Toolbar'}</span>
+                        </button>
+                      </div>
+
+                      <div className="h-px bg-gray-100 dark:bg-white/5" />
+
                       <div>
                         <div className="flex items-center justify-between mb-2">
                           <div className="text-xs font-medium text-gray-400 uppercase tracking-wider">Publish</div>
@@ -338,6 +363,7 @@ function FullPageEditor({ params }: { params: { id: string } }) {
 
             <Editor
               markdown={note.content}
+              showToolbar={showToolbar}
               className={`${fontFamily} ${fontSize}`}
               onChange={md => {
                 setNote({ ...note, content: md });
