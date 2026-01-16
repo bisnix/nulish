@@ -65,6 +65,7 @@ function FullPageEditor({ params }: { params: { id: string } }) {
 
   // Settings State
   const [showSettings, setShowSettings] = useState(false);
+  const [showGlobalSettings, setShowGlobalSettings] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [fontFamily, setFontFamily] = useState<'font-sans' | 'font-droid-serif' | 'font-dm-mono'>('font-sans');
 
@@ -133,7 +134,7 @@ function FullPageEditor({ params }: { params: { id: string } }) {
   return (
     <div className={`flex min-h-screen font-sans text-gray-900 dark:text-gray-100 bg-background-light dark:bg-background-dark animate-in fade-in duration-500`}>
 
-      <Sidebar isOpen={isSidebarOpen} />
+      <Sidebar isOpen={isSidebarOpen} onOpenSettings={() => setShowGlobalSettings(true)} />
 
       <main className={`flex-1 relative bg-background-light dark:bg-background-dark min-h-screen transition-all duration-300 ${isSidebarOpen ? 'mr-64' : 'mr-0'}`}>
         <header className={`fixed top-0 left-0 right-0 h-16 flex items-center justify-between px-8 z-10 glass-panel border-b-0 transition-all duration-300 ${isSidebarOpen ? 'mr-64' : 'mr-0'}`}>
@@ -368,6 +369,7 @@ function FullPageEditor({ params }: { params: { id: string } }) {
         cancelText="Cancel"
         isDanger={true}
       />
+      <GlobalSettingsModal isOpen={showGlobalSettings} onClose={() => setShowGlobalSettings(false)} />
     </div >
   );
 }
