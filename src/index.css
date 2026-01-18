@@ -225,14 +225,26 @@ li.mdxeditor-list-item[role="checkbox"]::before {
   display: none !important;
 }
 
-/* Fix: Reduce spacing for nested checkbox lists */
-.nulish-editor ul.mdxeditor-checkbox-list ul.mdxeditor-checkbox-list {
+/* REVISED FIX: Aggressively handle nested spacing */
+
+/* 1. Remove margins from nested ULs (overriding prose) */
+.nulish-editor ul.mdxeditor-checkbox-list ul,
+.nulish-editor .prose ul ul {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+  padding-left: 1.5rem !important;
+  /* Keep indent but remove vertical space */
+}
+
+/* 2. Remove margins from the LI that purely contains the nested list */
+/* This handles the "Container LI" which adds unnecessary vertical gap */
+.nulish-editor ul.mdxeditor-checkbox-list>li:has(> ul) {
   margin-top: 0 !important;
   margin-bottom: 0 !important;
 }
 
-/* Optional: Adjust list item spacing if specific control is needed for nested items */
-.nulish-editor ul.mdxeditor-checkbox-list ul.mdxeditor-checkbox-list li {
-  margin-top: 0.1rem !important;
-  margin-bottom: 0.1rem !important;
+/* 3. Ensure nested list items are tight but not collapsed */
+.nulish-editor ul.mdxeditor-checkbox-list ul li {
+  margin-top: 4px !important;
+  margin-bottom: 4px !important;
 }
