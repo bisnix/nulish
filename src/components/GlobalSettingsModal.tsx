@@ -12,6 +12,11 @@ export const GlobalSettingsModal = ({ isOpen, onClose }: GlobalSettingsModalProp
     const [fontSize, setFontSize] = useState('text-editor-sm');
     const [frameStyle, setFrameStyle] = useState('none');
 
+    const [siteTitle, setSiteTitle] = useState('Nulish');
+    const [siteDesc, setSiteDesc] = useState('A minimalist writing app.');
+    const [siteFavicon, setSiteFavicon] = useState('');
+    const [siteThumbnail, setSiteThumbnail] = useState('');
+
     // Load defaults on open
     useEffect(() => {
         if (isOpen) {
@@ -22,6 +27,11 @@ export const GlobalSettingsModal = ({ isOpen, onClose }: GlobalSettingsModalProp
             setFontFamily(savedFont);
             setFontSize(savedSize);
             setFrameStyle(savedFrame);
+
+            setSiteTitle(localStorage.getItem('site_title') || 'Nulish');
+            setSiteDesc(localStorage.getItem('site_desc') || 'A minimalist writing app.');
+            setSiteFavicon(localStorage.getItem('site_favicon') || '');
+            setSiteThumbnail(localStorage.getItem('site_thumbnail') || '');
         }
     }, [isOpen]);
 
@@ -29,9 +39,16 @@ export const GlobalSettingsModal = ({ isOpen, onClose }: GlobalSettingsModalProp
         localStorage.setItem('default_font', fontFamily);
         localStorage.setItem('default_size', fontSize);
         localStorage.setItem('default_frame', frameStyle);
+
+        localStorage.setItem('site_title', siteTitle);
+        localStorage.setItem('site_desc', siteDesc);
+        localStorage.setItem('site_favicon', siteFavicon);
+        localStorage.setItem('site_thumbnail', siteThumbnail);
+
         onClose();
         // Notify app to refresh defaults if needed (optional)
         window.dispatchEvent(new Event('nulish-defaults-updated'));
+        window.dispatchEvent(new Event('nulish-meta-updated'));
     };
 
     return (
@@ -62,6 +79,57 @@ export const GlobalSettingsModal = ({ isOpen, onClose }: GlobalSettingsModalProp
                             <p className="text-sm text-gray-500 dark:text-gray-400">
                                 These settings will be applied as defaults for all <strong>newly created notes</strong>.
                             </p>
+
+                            {/* Site Identity */}
+                            <div>
+                                <div className="text-xs font-medium text-gray-400 mb-2 uppercase tracking-wider">Site Identity (Meta Tags)</div>
+                                <div className="space-y-3">
+                                    <div>
+                                        <label className="text-xs text-gray-500 block mb-1">Site Title</label>
+                                        <input
+                                            type="text"
+                                            value={siteTitle}
+                                            onChange={(e) => setSiteTitle(e.target.value)}
+                                            className="w-full bg-gray-100 dark:bg-white/5 border-none rounded-md px-3 py-2 text-sm focus:ring-1 ring-primary outline-none"
+                                            placeholder="Nulish"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-xs text-gray-500 block mb-1">Description</label>
+                                        <input
+                                            type="text"
+                                            value={siteDesc}
+                                            onChange={(e) => setSiteDesc(e.target.value)}
+                                            className="w-full bg-gray-100 dark:bg-white/5 border-none rounded-md px-3 py-2 text-sm focus:ring-1 ring-primary outline-none"
+                                            placeholder="A minimalist writing app."
+                                        />
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label className="text-xs text-gray-500 block mb-1">Favicon URL</label>
+                                            <input
+                                                type="text"
+                                                value={siteFavicon}
+                                                onChange={(e) => setSiteFavicon(e.target.value)}
+                                                className="w-full bg-gray-100 dark:bg-white/5 border-none rounded-md px-3 py-2 text-sm focus:ring-1 ring-primary outline-none"
+                                                placeholder="https://..."
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="text-xs text-gray-500 block mb-1">Thumbnail URL</label>
+                                            <input
+                                                type="text"
+                                                value={siteThumbnail}
+                                                onChange={(e) => setSiteThumbnail(e.target.value)}
+                                                className="w-full bg-gray-100 dark:bg-white/5 border-none rounded-md px-3 py-2 text-sm focus:ring-1 ring-primary outline-none"
+                                                placeholder="https://..."
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="h-px bg-gray-100 dark:bg-white/5 my-4" />
 
                             {/* Font Family */}
                             <div>
@@ -135,8 +203,8 @@ export const GlobalSettingsModal = ({ isOpen, onClose }: GlobalSettingsModalProp
                             </div>
                         </div>
                     </motion.div>
-                </div>
+                </div >
             )}
-        </AnimatePresence>
+        </AnimatePresence >
     );
 };

@@ -31,6 +31,54 @@ function Home({ onOpenNote }: { onOpenNote: (note?: Note) => void }) {
     return () => clearInterval(interval);
   }, [searchQuery]);
 
+  // --- Meta Tags Sync ---
+  useEffect(() => {
+    const updateMeta = () => {
+      const title = localStorage.getItem('site_title') || 'Nulish';
+      const desc = localStorage.getItem('site_desc') || 'A minimalist writing app.';
+      const favicon = localStorage.getItem('site_favicon');
+      const thumbnail = localStorage.getItem('site_thumbnail');
+
+      // Update Title
+      document.title = title;
+
+      // Update Description
+      let descMeta = document.querySelector('meta[name="description"]');
+      if (!descMeta) {
+        descMeta = document.createElement('meta');
+        descMeta.setAttribute('name', 'description');
+        document.head.appendChild(descMeta);
+      }
+      descMeta.setAttribute('content', desc);
+
+      // Update Favicon
+      if (favicon) {
+        let link = document.querySelector("link[rel~='icon']") as HTMLLinkElement;
+        if (!link) {
+          link = document.createElement('link');
+          link.rel = 'icon';
+          document.head.appendChild(link);
+        }
+        link.href = favicon;
+      }
+
+      // Update Thumbnail (OG:Image)
+      if (thumbnail) {
+        let ogImage = document.querySelector('meta[property="og:image"]');
+        if (!ogImage) {
+          ogImage = document.createElement('meta');
+          ogImage.setAttribute('property', 'og:image');
+          document.head.appendChild(ogImage);
+        }
+        ogImage.setAttribute('content', thumbnail);
+      }
+    };
+
+    updateMeta(); // Run on mount
+    window.addEventListener('nulish-meta-updated', updateMeta);
+    return () => window.removeEventListener('nulish-meta-updated', updateMeta);
+  }, []);
+
   const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
     const val = e.target.value;
     setSearchQuery(val);
