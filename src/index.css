@@ -224,3 +224,15 @@ li.mdxeditor-list-item[role="checkbox"]::before {
 .nulish-editor.hide-toolbar .mdxeditor-toolbar {
   display: none !important;
 }
+
+/* Fix: Reduce spacing for nested checkbox lists */
+.nulish-editor ul.mdxeditor-checkbox-list ul.mdxeditor-checkbox-list {
+  margin-top: 0 !important;
+  margin-bottom: 0 !important;
+}
+
+/* Optional: Adjust list item spacing if specific control is needed for nested items */
+.nulish-editor ul.mdxeditor-checkbox-list ul.mdxeditor-checkbox-list li {
+  margin-top: 0.1rem !important;
+  margin-bottom: 0.1rem !important;
+}
