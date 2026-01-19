@@ -97,7 +97,7 @@ export const Editor: React.FC<EditorProps> = ({ markdown, onChange, editorRef, c
                 onChange={onChange}
                 readOnly={readOnly}
                 className={isDark ? 'dark-theme' : ''}
-                contentEditableClassName={`prose dark:prose-invert max-w-none focus:outline-none min-h-[50vh] py-4 prose-headings:font-serif prose-headings:font-normal ${className || ''}`}
+                contentEditableClassName={`prose dark:prose-invert max-w-none focus:outline-none min-h-[50vh] py-4 prose-headings:font-normal ${className || ''}`}
                 plugins={[
                     ...(!readOnly ? [
                         toolbarPlugin({
