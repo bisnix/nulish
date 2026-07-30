@@ -132,6 +132,8 @@ function Home({ onOpenNote }: { onOpenNote: (note?: Note) => void }) {
   );
 }
 
+import { FindReplaceModal } from './components/FindReplaceModal';
+
 function FullPageEditor({ params }: { params: { id: string } }) {
   const [note, setNote] = useState<Note | null>(null);
   const [, setLocation] = useLocation();
@@ -145,6 +147,8 @@ function FullPageEditor({ params }: { params: { id: string } }) {
   const [showSettings, setShowSettings] = useState(false);
   const [showGlobalSettings, setShowGlobalSettings] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showFindReplace, setShowFindReplace] = useState(false);
+
   const [fontFamily, setFontFamily] = useState<'font-sans' | 'font-droid-serif' | 'font-dm-mono'>('font-sans');
 
   const [fontSize, setFontSize] = useState<'text-editor-sm' | 'text-editor-md' | 'text-editor-lg'>('text-editor-sm');
@@ -215,6 +219,20 @@ function FullPageEditor({ params }: { params: { id: string } }) {
     const updated = await db.saveNote({ ...note, title, content, tags: tags !== undefined ? tags : note.tags });
     setNote(updated);
   };
+
+  const handleReplace = (find: string, replace: string) => {
+    if (!note) return;
+    // Simple replaceAll implementation
+    const regex = new RegExp(find, 'g'); // Determine case sensitivity based on requirements, assuming global for now
+    const newContent = note.content.replace(regex, replace);
+
+    if (newContent !== note.content) {
+      setNote({ ...note, content: newContent });
+      saveNote(note.title, newContent);
+    }
+    setShowFindReplace(false);
+  };
+
 
   if (!note) return <div className="p-8">Loading...</div>;
 
@@ -327,12 +345,21 @@ function FullPageEditor({ params }: { params: { id: string } }) {
                         <div className="text-xs font-medium text-gray-400 mb-2 uppercase tracking-wider">Interface</div>
                         <button
                           onClick={toggleToolbar}
-                          className={`w-full py-2 px-3 rounded-md text-xs font-medium transition-all flex items-center justify-center space-x-2 ${!showToolbar
+                          className={`w-full py-2 px-3 rounded-md text-xs font-medium transition-all flex items-center justify-center space-x-2 mb-2 ${!showToolbar
                             ? 'bg-primary/10 text-primary border border-primary/20'
                             : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-white/10 dark:text-gray-200'
                             }`}
                         >
                           <span>{showToolbar ? 'Hide Toolbar' : 'Show Toolbar'}</span>
+                        </button>
+                        <button
+                          onClick={() => {
+                            setShowSettings(false);
+                            setShowFindReplace(true);
+                          }}
+                          className="w-full py-2 px-3 rounded-md text-xs font-medium transition-all flex items-center justify-center space-x-2 bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-white/10 dark:text-gray-200"
+                        >
+                          <span>Find & Replace</span>
                         </button>
                       </div>
 
@@ -474,6 +501,11 @@ function FullPageEditor({ params }: { params: { id: string } }) {
         isDanger={true}
       />
       <GlobalSettingsModal isOpen={showGlobalSettings} onClose={() => setShowGlobalSettings(false)} />
+      <FindReplaceModal
+        isOpen={showFindReplace}
+        onClose={() => setShowFindReplace(false)}
+        onReplace={(f, r) => handleReplace(f, r)}
+      />
     </div >
   );
 }
@@ -487,6 +519,19 @@ function AppLayout() {
   // Sidebar State
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [showGlobalSettings, setShowGlobalSettings] = useState(false);
+
+  // Function to handle replace in generic modal if user edits there?
+  // Since AppLayout is huge, I'll stick to FullPageEditor first as requested, 
+  // but let's check if the REQUEST implied strictly "the editor menu". 
+  // "tombolnya taruh di dalam setting titik tiga pojok kanan atas" (put the button inside the three dots settings top right).
+  // The 'Modal' editor doesn't HAVE a three dots menu in the internal layout, only the FullPageEditor does.
+  // Wait, let me check the Modal Editor layout in AppLayout.
+  // Line 611: `div className="h-14 flex items-center justify-end px-4 backdrop-blur-sm z-50"`
+  // It has `Maximize2` and `X`. No three dots menu.
+  // So the request most likely refers to the `FullPageEditor` which HAS the three dots menu.
+
+  // ... (Rest of AppLayout code unchanged for now unless user asks for modal support too)
+
 
   // Load sidebar state persistence
   useEffect(() => {
